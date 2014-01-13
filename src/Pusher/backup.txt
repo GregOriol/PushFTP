@@ -1,0 +1,119 @@
+	function _prepareChanges() {
+		$this->e('Updating FTP');
+		
+		$rpath = $this->profile['ftp']['path'];
+		$rpath = $this->_makeTmpDir($rpath);
+		
+		$this->_processChanges($rpath, array(
+			'M' => function($file, $lfile, $lfileh, $rfile) {
+				$this->e('Pushing '.$lfileh.' to '.$rfile);
+				if ($this->go === true) {
+					$r = $this->ftp->put($lfile, $rfile, true);
+					if ($this->ftp->isError($r)) {
+						$this->e('Could not perform operation, stopping.');
+						throw new \Exception('', 1);
+					}
+				}
+			},
+			'A' => function($file, $lfile, $lfileh, $rfile) {
+				if (is_dir($lfile)) {
+					// Checking if directory exists by trying to cd into it
+					$pwd = $this->ftp->pwd();
+					$r = $this->ftp->cd($rfile);
+					if ($this->ftp->isError($r)) {
+						$this->e('Creating directory '.$rfile);
+						if ($this->go === true) {
+							$r = $this->ftp->mkdir($rfile, true);
+							if ($this->ftp->isError($r)) {
+								$this->e('Could not perform operation, stopping.');
+								throw new \Exception('', 1);
+							}
+						}
+					} else {
+						// If cd was successful, going back to where we were
+						$r = $this->ftp->cd($pwd);
+					}
+				}
+				else {
+					$dir = dirname($file);
+					// Checking if directory exists by trying to cd into it
+					$pwd = $this->ftp->pwd();
+					$r = $this->ftp->cd($this->profile['ftp']['path'].'/'.$dir);
+					if ($this->ftp->isError($r)) {
+						$this->e('Creating directory '.$dir.' for new file');
+						if ($this->go === true) {
+							$r = $this->ftp->mkdir($this->profile['ftp']['path'].'/'.$dir, true);
+							if ($this->ftp->isError($r)) {
+								$this->e('Could not perform operation, stopping.');
+								throw new \Exception('', 1);
+							}
+						}
+					} else {
+						// If cd was successful, going back to where we were
+						$r = $this->ftp->cd($pwd);
+					}
+			
+					$this->e('Adding '.$lfileh.' to '.$rfile);
+					if ($this->go === true) {
+						$r = $this->ftp->put($lfile, $rfile, ($this->lenient) ? true : false);
+						if ($this->ftp->isError($r)) {
+							$this->e('Could not perform operation, stopping.');
+							throw new \Exception('', 1);
+						}
+					}
+				}
+			},
+			'D' => function($file, $lfile, $lfileh, $rfile) {
+				$this->e('Deleting '.$rfile);
+				if ($this->go === true) {
+					$r = $this->ftp->rm($rfile, true);
+					if ($this->ftp->isError($r)) {
+						if ($this->lenient) {
+							$this->e('Could not perform operation, continuing (lenient mode).');
+						} else {
+							$this->e('Could not perform operation, stopping.');
+							throw new \Exception('', 1);
+						}
+					}
+				}
+			}
+		), false);
+	}
+	
+	function _processChanges($rpath, $handlers = array()) {
+		foreach ($this->svn_changes as $value) {
+			$file = $value['file'];
+			$lfile = $this->lpath.'/'.$file;
+			$lfileh = $this->lpathh.'/'.$file;
+			$rfile = $rpath.'/'.$file;
+
+			// Check if the file should be excluded
+			$shouldSkip = false;
+			foreach ($this->profile['excludes'] as $exclude) {
+				if (fnmatch($exclude, $file)) {
+					$shouldSkip = true;
+				}
+			}
+			if ($shouldSkip) {
+				$this->e('Skipping excluded file '.$lfileh);
+				continue;
+			}
+
+			// Processing
+			if ($value['status'] == 'M') {
+				if (isset($handlers['M'])) {
+					$handlers['M']($file, $lfile, $lfileh, $rfile);
+				}
+			} elseif ($value['status'] == 'A') {
+				if (isset($handlers['A'])) {
+					$handlers['A']($file, $lfile, $lfileh, $rfile);
+				}
+			} elseif ($value['status'] == 'D') {
+				if (isset($handlers['D'])) {
+					$handlers['D']($file, $lfile, $lfileh, $rfile);
+				}
+			} else {
+				$this->e('Unknown SVN status '.$value['status'].' for file '.$value['file']);
+			}
+		}
+	}
