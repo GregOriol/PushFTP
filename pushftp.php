@@ -8,7 +8,7 @@
  *  - Console_CommandLine : http://pear.php.net/manual/en/package.console.console-commandline.php
  *  - phpseclib : http://phpseclib.sourceforge.net
  *
- * v0.4.2
+ * v0.4.3
  */
 
 /**

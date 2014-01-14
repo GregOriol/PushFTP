@@ -4,7 +4,7 @@ namespace Pusher;
 
 class Pusher
 {
-	var $version = '0.4.2';
+	var $version = '0.4.3';
 
 	var $path = null;
 	var $profileName = null;
@@ -848,7 +848,7 @@ class Pusher
 	 * @return void
 	 */
 	function e($str) {
-		echo $str."\n";
+		echo $str.PHP_EOL;
 		
 		file_put_contents($this->logfile, $str."\n", FILE_APPEND);
 	}
