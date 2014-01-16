@@ -307,7 +307,7 @@ class Pusher
 		$pusherHelper->repo_rpath = $this->repo_rpath;
 		$this->svn_changes = array_map(array($pusherHelper, 'svn_changes_parse'), $output);
 		if (empty($this->svn_changes)) {
-			$this->e('No changes found on SCM between TARGET version '.$this->rev.' and LOCAL version '.$this->newrev);
+			$this->e('No changes found on SCM between target version '.$this->rev.' and local version '.$this->newrev);
 			if ($this->nfonc === true) {
 				throw new \Exception('', 0);
 			} else {
@@ -315,7 +315,7 @@ class Pusher
 			}
 		}
 		else {
-			$this->e('Found '.count($this->svn_changes).' changes on SCM between TARGET version '.$this->rev.' and LOCAL version '.$this->newrev);
+			$this->e('Found '.count($this->svn_changes).' changes on SCM between target version '.$this->rev.' and local version '.$this->newrev);
 		}
 	}
 

@@ -14,7 +14,7 @@ class Factory
 				$target = new Implementation\Sftp($host, $port_number);
 				break;
 			default:
-				throw new \Exception('No connection type set cannot choose a method to connect');
+				throw new \Exception('Unknown target type: '.$type);
 		}
 
 		return $target;
