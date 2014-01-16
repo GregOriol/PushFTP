@@ -44,8 +44,6 @@ try {
 	$pusher->prepareConnection();
 
 	$pusher->parseLocalRevision();
-	$pusher->e('Using SVN root as '.$pusher->repo_root.' (note: local and FTP must have been pulled from the same repository !)');
-
 	$pusher->parseRemoteRevision();
 
 	$pusher->getChanges();

@@ -19,6 +19,7 @@ class Pusher
 	var $profile = null;
 
 	var $target;
+	var $scm;
 
 	var $lpath = null;
 	var $lpathh = null;
@@ -26,29 +27,23 @@ class Pusher
 	var $rrevfile;
 	var $lrevfile;
 
-	var $repo_root;
-	var $repo_url;
-	var $repo_lpath;
-	var $repo_rpath;
-
 	var $rev;
 	var $newrev;
 	
-	var $svn_changes;
+	var $scm_changes;
 
 	var $tmpDir = '_tmp';
 
 	var $logfile = 'pushftp.log';
-	var $svnchangesfile = 'pushftp.svn_changes.txt';
+	var $scmchangesfile = 'pushftp.scm_changes.txt';
 	var $flushlistfile = 'pushftp.flushlist.txt';
-	
 
 	/**
 	 * Parsing command line
 	 *
 	 * @return void
 	 */
-	function parseCommandLine() {
+	public function parseCommandLine() {
 		// Setting up command line parser
 		$parser = new \Console_CommandLine();
 		$parser->description = 'Push SCM changes to a target.';
@@ -137,7 +132,7 @@ class Pusher
 	 *
 	 * @return void
 	 */
-	function parseConfigFile() {
+	public function parseConfigFile() {
 		$this->lpath = realpath($this->path); // real local path
 		$this->lpathh = $this->path; // human readable local path
 
@@ -181,7 +176,7 @@ class Pusher
 	 *
 	 * @return void
 	 */
-	function prepareConnection() {
+	public function prepareConnection() {
 		if (!isset($this->profile['target']) || empty($this->profile['target'])) {
 			$this->e('Target configuration not found on the profile');
 			throw new \Exception('', 1);
@@ -195,20 +190,21 @@ class Pusher
 		// TODO: refactor this
 		$this->rrevfile = $this->profile['target']['path'].'/'.'rev';
 		$this->lrevfile = '/tmp/'.$this->profile['target']['host'].'-rev';
-
-		$this->target  = \Pusher\Target\Factory::create($this->profile['target']['type'], $this->profile['target']['host'], $this->profile['target']['port']);
-		$this->e('Connecting to target '.$this->profile['target']['type'].': '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
+		
+		$this->target = \Pusher\Target\Factory::create($this->profile['target']['type'], $this->profile['target']['host'], $this->profile['target']['port']);
+		
+		$this->e('Connecting to target '.$this->profile['target']['type'].' '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
 		$r = $this->target->connect();
 		if ($this->target->isError($r)) {
 			$this->e('Could not connect to target '.$this->profile['target']['type'].': '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
 			throw new \Exception('', 1);
 		}
-
+		
 		$password = $this->profile['target']['password'];
 		if ($this->key !== null) {
 			$password = $this->_decryptPassword($this->profile['target']['password']);
 		}
-
+		
 		$this->e('Logging in as '.$this->profile['target']['login']);
 		$r = $this->target->login($this->profile['target']['login'], $password);
 		if ($this->target->isError($r)) {
@@ -226,24 +222,21 @@ class Pusher
 	 *
 	 * @return void
 	 **/
-	function parseLocalRevision() {
-		$this->e('Getting LOCAL version');
-		$this->newrev = exec('cd '.$this->lpath.' && svnversion');
-
-		if (!is_numeric($this->newrev)) {
-			$this->e('Local SVN revision error, value "'.$this->newrev.'" is not a valid revision');
-			if (strpos($this->newrev, ':') !== false) {
-				$this->e('Local SVN revision has multiple states, try `svn update` to get a uniform state');
-			} elseif (strpos($this->newrev, 'M') !== false) {
-				$this->e('Local SVN revision has local modifications, try commiting them or use svn diff/patch');
-			}
+	public function parseLocalRevision() {
+		$this->e('Getting local version');
+		
+		$this->scm = \Pusher\SCM\Factory::create($this->lpath);
+		try {
+			$this->newrev = $this->scm->getCurrentVersion();
+		} catch (\Exception $e) {
+			$this->e($e->getMessage());
 			throw new \Exception('', 1);
 		}
-
-		$this->repo_root = exec('cd '.$this->lpath.' && svn info | grep \'Repository Root\' | awk \'{print $NF}\'');
-		$this->repo_url = exec('cd '.$this->lpath.' && svn info | grep \'URL\' | awk \'{print $NF}\'');
-		$this->repo_lpath = str_replace($this->repo_root.'/', '', $this->repo_url);
-		$this->newrev = $this->repo_lpath.'@'.$this->newrev;
+		
+		// TODO: is this really useful ?
+		if (!empty($this->scm->repo_root)) {
+			$this->e('Using SCM root '.$this->scm->repo_root.' (note: local and FTP must have been pulled from the same repository !)');
+		}
 	}
 
 	/**
@@ -251,18 +244,19 @@ class Pusher
 	 *
 	 * @return void
 	 **/
-	function parseRemoteRevision() {
-		$this->e('Getting target\'s version');
+	public function parseRemoteRevision() {
+		$this->e('Getting target version');
 		$r = $this->target->get($this->rrevfile, $this->lrevfile);
 		if ($this->target->isError($r)) {
-			$this->e('No rev file found on the target. Use trunk rev 1 as reference ? [Y/n]');
+			$initial_commit = $this->scm->getInitialCommit();
+			$this->e('No rev file found on the target. Use initial commit '.$initial_commit.' as reference ? [Y/n]');
 
 			$r = readline();
 			if ($r === false) {
 				throw new \Exception('', 1);
 			} else {
 				if ($r == '' || $r == 'Y') {
-					$this->rev = 'trunk@1';
+					$this->rev = $initial_commit;
 				} else {
 					$this->e('No. Stopping');
 					throw new \Exception('', 1);
@@ -283,30 +277,30 @@ class Pusher
 	}
 
 	/**
-	 * Getting SVN changes
+	 * Getting SCM changes
 	 *
 	 * @return void
 	 **/
-	function getChanges() {
-		// Getting changes from SVN
-		exec('cd '.$this->lpath.' && svn diff --summarize '.$this->repo_root.'/'.$this->rev.' '.$this->repo_root.'/'.$this->newrev.'', $output, $return_var);
-		if ($return_var != 0) {
-			$this->e('SVN diff error : '.print_r($output, true));
+	public function getChanges() {
+		// Getting changes from SCM
+		$output = $this->scm->getChanges($this->rev, $this->newrev);
+		if ($output === false) {
+			$this->e('Could not get SCM changes between '.$this->rev.' and '.$this->newrev);
 			throw new \Exception('', 1);
 		}
 
+		// Parsing changes
+		$this->scm->repo_rpath = $this->repo_rpath;
+		$this->scm_changes = array_map(array($this->scm, 'parseChanges'), $output);
+
 		// Dumping changes list to a log file
-		file_put_contents($this->svnchangesfile, '');
-		foreach ($output as $row) {
-			file_put_contents($this->svnchangesfile, $row."\n", FILE_APPEND);
+		file_put_contents($this->scmchangesfile, '');
+		foreach ($this->scm_changes as $change) {
+			file_put_contents($this->scmchangesfile, implode("\t", $change)."\n", FILE_APPEND);
 		}
 
-		// Parsing changes
-		$pusherHelper = new PusherHelper();
-		$pusherHelper->repo_root = $this->repo_root;
-		$pusherHelper->repo_rpath = $this->repo_rpath;
-		$this->svn_changes = array_map(array($pusherHelper, 'svn_changes_parse'), $output);
-		if (empty($this->svn_changes)) {
+		// Checking changes
+		if (empty($this->scm_changes)) {
 			$this->e('No changes found on SCM between target version '.$this->rev.' and local version '.$this->newrev);
 			if ($this->nfonc === true) {
 				throw new \Exception('', 0);
@@ -315,7 +309,7 @@ class Pusher
 			}
 		}
 		else {
-			$this->e('Found '.count($this->svn_changes).' changes on SCM between target version '.$this->rev.' and local version '.$this->newrev);
+			$this->e('Found '.count($this->scm_changes).' changes on SCM between target version '.$this->rev.' and local version '.$this->newrev);
 		}
 	}
 
@@ -324,7 +318,7 @@ class Pusher
 	 *
 	 * @return void
 	 **/
-	function pushChanges() {
+	public function pushChanges() {
 		$this->_prepareChanges();
 		$this->_commitChanges();
 	}
@@ -335,11 +329,11 @@ class Pusher
 	 * @return void
 	 * @author Grégory ORIOL
 	 */
-	function rollbackChanges() {
+	public function rollbackChanges() {
 		$this->e("Rolling back changes");
 		
 		// TODO: implement rollback
-		$this->e("Rollback not implemented !!!");
+		$this->e("Rollback not implemented");
 		
 		$rpath = $this->profile['target']['path'];
 		$rtmppath = $this->_getTmpDirName($rpath);
@@ -351,7 +345,7 @@ class Pusher
 	 *
 	 * @return void
 	 */
-	function _prepareChanges() {
+	protected function _prepareChanges() {
 		$this->e('Preparing files on the target');
 		
 		$rpath = $this->profile['target']['path'];
@@ -436,7 +430,7 @@ class Pusher
 	 *
 	 * @return void
 	 */
-	function _commitChanges() {
+	protected function _commitChanges() {
 		$this->e('Commiting files on the target');
 		
 		$rpath = $this->profile['target']['path'];
@@ -523,8 +517,8 @@ class Pusher
 	 * @param array $handlers array containing handlers for each type of change
 	 * @return void
 	 */
-	function _processChanges($rpath, $handlers = array()) {
-		foreach ($this->svn_changes as $value) {
+	protected function _processChanges($rpath, $handlers = array()) {
+		foreach ($this->scm_changes as $value) {
 			$file = $value['file'];
 			$lfile = $this->lpath.'/'.$file;
 			$lfileh = $this->lpathh.'/'.$file;
@@ -556,7 +550,7 @@ class Pusher
 					$handlers['D']($rpath, $file, $lfile, $lfileh, $rfile);
 				}
 			} else {
-				$this->e('Unknown SVN status '.$value['status'].' for file '.$value['file']);
+				$this->e('Unknown SCM status '.$value['status'].' for file '.$value['file']);
 			}
 		}
 	}
@@ -567,7 +561,7 @@ class Pusher
 	 * @param string $rpath 
 	 * @return void
 	 */
-	function _getTmpDirName($rpath) {
+	protected function _getTmpDirName($rpath) {
 		$rpath .= '/'.$this->tmpDir;
 
 		return $rpath;
@@ -579,7 +573,7 @@ class Pusher
 	 * @param string $rtmppath 
 	 * @return void
 	 */
-	function _makeTmpDir($rtmppath) {
+	protected function _makeTmpDir($rtmppath) {
 		if ($this->go === true) {
 			$this->e('Preparing temporary directory '.$rtmppath);
 			$pwd = $this->target->pwd();
@@ -613,7 +607,7 @@ class Pusher
 	 * @param string $rtmppath 
 	 * @return void
 	 */
-	function _cleanupTmpDir($rtmppath) {
+	protected function _cleanupTmpDir($rtmppath) {
 		if ($this->go === true) {
 			$this->e('Cleaning up temporary directory '.$rtmppath);
 			
@@ -632,7 +626,7 @@ class Pusher
 	 * @param string $rdir 
 	 * @return void
 	 */
-	function _directoryExists($rdir) {
+	protected function _directoryExists($rdir) {
 		$directoryExists = false;
 		
 		// Checking if directory exists by trying to cd into it
@@ -655,7 +649,7 @@ class Pusher
 	 *
 	 * @return void
 	 */
-	function checkPermissions() {
+	public function checkPermissions() {
 		$this->e('Checking permissions');
 		
 		if (!isset($this->profile['permissions']) || empty($this->profile['permissions'])) {
@@ -688,7 +682,7 @@ class Pusher
 	 * @param string $file 
 	 * @return int new permissions to apply, of false
 	 */
-	function _checkPermissions($file) {
+	protected function _checkPermissions($file) {
 		if (!isset($this->profile['permissions']) || empty($this->profile['permissions'])) {
 			return false;
 		}
@@ -711,7 +705,7 @@ class Pusher
 	 * @param int new permissions to apply, of false
 	 * @return void
 	 */
-	function _updatePermissions($self, $rpath, $file, $lfile, $lfileh, $rfile, $permissions) {
+	protected function _updatePermissions($self, $rpath, $file, $lfile, $lfileh, $rfile, $permissions) {
 		if (is_dir($lfile)) {
 			$self->e('Updating permissions on directory '.$rfile.' to '.$permissions);
 			if ($self->go === true) {
@@ -739,7 +733,7 @@ class Pusher
 	 *
 	 * @return void
 	 */
-	function makeCdnFlushList() {
+	public function makeCdnFlushList() {
 		$this->e('Making CDN flush list');
 		
 		if (!isset($this->profile['cdn']['flushlist'])) {
@@ -768,7 +762,7 @@ class Pusher
 				}
 			},
 			'D' => function($rpath, $file, $lfile, $lfileh, $rfile) use (&$flushlist, $self) {
-				// NB: no specific check on directories since all files inside will be listed as 'D' by SVN
+				// NB: no specific check on directories since all files inside will be listed as 'D' by SCM
 				if ($self->_shouldCdnFlush($file)) {
 					$flushlist[] = $file;
 				}
@@ -795,7 +789,7 @@ class Pusher
 	 * @param string $file 
 	 * @return boolean
 	 */
-	function _shouldCdnFlush($file) {
+	protected function _shouldCdnFlush($file) {
 		if (!isset($this->profile['cdn']['flushlist'])) {
 			return false;
 		}
@@ -817,7 +811,7 @@ class Pusher
 	 *
 	 * @return void
 	 **/
-	function updateRemoteRevision() {
+	public function updateRemoteRevision() {
 		if ($this->go === true) {
 			$this->e('Updating target rev');
 			file_put_contents($this->lrevfile, $this->newrev);
@@ -835,7 +829,7 @@ class Pusher
 	 *
 	 * @return void
 	 **/
-	function _decryptPassword($encryptedPassword) {
+	protected function _decryptPassword($encryptedPassword) {
 		$encrypter = new \Crypt_AES();
 		$encrypter->setKey($this->key);
 
@@ -852,7 +846,7 @@ class Pusher
 	 * @param string $str 
 	 * @return void
 	 */
-	function e($str) {
+	public function e($str) {
 		echo $str.PHP_EOL;
 		
 		file_put_contents($this->logfile, $str."\n", FILE_APPEND);
