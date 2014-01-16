@@ -79,10 +79,9 @@ class Pusher
 			'action'			=> 'StoreString'
 		));
 		$parser->addArgument('path', array(
-				'multiple'		=> false,
-				'description'	=> "local path where pushftp.json is located, or pushftp.json path"
-			)
-		);
+			'multiple'		=> false,
+			'description'	=> "local path where pushftp.json is located, or pushftp.json path"
+		));
 
 		// Parsing command line
 		try {
@@ -176,7 +175,7 @@ class Pusher
 	 *
 	 * @return void
 	 */
-	public function prepareConnection() {
+	public function prepareTarget() {
 		if (!isset($this->profile['target']) || empty($this->profile['target'])) {
 			$this->e('Target configuration not found on the profile');
 			throw new \Exception('', 1);
@@ -244,7 +243,7 @@ class Pusher
 	 *
 	 * @return void
 	 **/
-	public function parseRemoteRevision() {
+	public function parseTargetRevision() {
 		$this->e('Getting target version');
 		$r = $this->target->get($this->rrevfile, $this->lrevfile);
 		if ($this->target->isError($r)) {
@@ -281,7 +280,7 @@ class Pusher
 	 *
 	 * @return void
 	 **/
-	public function getChanges() {
+	public function parseChanges() {
 		// Getting changes from SCM
 		$output = $this->scm->getChanges($this->rev, $this->newrev);
 		if ($output === false) {
@@ -320,14 +319,13 @@ class Pusher
 	 **/
 	public function pushChanges() {
 		$this->_prepareChanges();
-		$this->_commitChanges();
+		$this->_applyChanges();
 	}
 
 	/**
 	 * Rolling back changes
 	 *
 	 * @return void
-	 * @author Grégory ORIOL
 	 */
 	public function rollbackChanges() {
 		$this->e("Rolling back changes");
@@ -346,13 +344,13 @@ class Pusher
 	 * @return void
 	 */
 	protected function _prepareChanges() {
-		$this->e('Preparing files on the target');
+		$this->e('Preparing changes on the target');
 		
 		$rpath = $this->profile['target']['path'];
 		$rpath = $this->_getTmpDirName($rpath);
 		$this->_makeTmpDir($rpath);
 		
-		$self = $this; // for php 5.3, could be remove when will be using php 5.4
+		$self = $this;
 		$this->_processChanges($rpath, array(
 			'M' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($self) {
 				$dir = dirname($file);
@@ -430,13 +428,13 @@ class Pusher
 	 *
 	 * @return void
 	 */
-	protected function _commitChanges() {
-		$this->e('Commiting files on the target');
+	protected function _applyChanges() {
+		$this->e('Applying changes on the target');
 		
 		$rpath = $this->profile['target']['path'];
 		$rtmppath = $this->_getTmpDirName($rpath);
 		
-		$self = $this; // for php 5.3, could be remove when will be using php 5.4
+		$self = $this;
 		$this->_processChanges($rpath, array(
 			'M' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($rtmppath, $self) {
 				// TODO: check if directory exists ?
@@ -659,7 +657,7 @@ class Pusher
 		
 		$rpath = $this->profile['target']['path'];
 		
-		$self = $this; // for php 5.3, could be remove when will be using php 5.4
+		$self = $this;
 		$this->_processChanges($rpath, array(
 			'M' => function($rpath, $file, $lfile, $lfileh, $rfile) use (&$flushlist, $self) {
 				$permissions = $self->_checkPermissions($file);
@@ -744,7 +742,7 @@ class Pusher
 		$rpath = $this->profile['target']['path'];
 		$flushlist = array();
 		
-		$self = $this; // for php 5.3, could be remove when will be using php 5.4
+		$self = $this;
 		$this->_processChanges($rpath, array(
 			'M' => function($rpath, $file, $lfile, $lfileh, $rfile) use (&$flushlist, $self) {
 				if ($self->_shouldCdnFlush($file)) {

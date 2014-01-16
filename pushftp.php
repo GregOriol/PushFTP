@@ -41,12 +41,12 @@ try {
 	$pusher->e('New PushFTP session '.date('Y-m-d H:i:s'));
 
 	$pusher->parseConfigFile();
-	$pusher->prepareConnection();
+	$pusher->prepareTarget();
 
 	$pusher->parseLocalRevision();
-	$pusher->parseRemoteRevision();
+	$pusher->parseTargetRevision();
 
-	$pusher->getChanges();
+	$pusher->parseChanges();
 	try {
 		$pusher->pushChanges();
 	} catch (Exception $e) {
