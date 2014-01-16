@@ -328,10 +328,10 @@ class Pusher
 	 * @return void
 	 */
 	public function rollbackChanges() {
-		$this->e("Rolling back changes");
+		$this->e('Rolling back changes');
 		
 		// TODO: implement rollback
-		$this->e("Rollback not implemented");
+		$this->e('Rollback not implemented');
 		
 		$rpath = $this->profile['target']['path'];
 		$rtmppath = $this->_getTmpDirName($rpath);
