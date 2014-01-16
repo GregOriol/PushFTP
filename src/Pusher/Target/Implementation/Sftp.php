@@ -2,9 +2,9 @@
 
 // Doc : http://phpseclib.sourceforge.net/sftp/intro.html
 
-namespace Pusher\Connector\Implementation;
+namespace Pusher\Target\Implementation;
 
-class Sftp extends \Pusher\Connector\AbstractConnector
+class Sftp extends \Pusher\Target\AbstractTarget
 {
 	public function ___construct($host, $port = false)
 	{

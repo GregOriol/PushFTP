@@ -1,14 +1,14 @@
 <?php
 
 /**
- * This script will check SVN changes and update an FTP server
+ * This script will check for SCM changes and update a target
  * 
  * Based on :
  *  - Net_FTP : http://pear.php.net/manual/en/package.networking.net-ftp.php
  *  - Console_CommandLine : http://pear.php.net/manual/en/package.console.console-commandline.php
  *  - phpseclib : http://phpseclib.sourceforge.net
  *
- * v0.4.3
+ * v0.5.0
  */
 
 /**

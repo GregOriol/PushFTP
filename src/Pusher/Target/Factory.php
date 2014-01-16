@@ -1,6 +1,6 @@
 <?php
 
-namespace Pusher\Connector;
+namespace Pusher\Target;
 
 class Factory
 {

@@ -4,7 +4,7 @@ namespace Pusher;
 
 class Pusher
 {
-	var $version = '0.4.3';
+	var $version = '0.5.0';
 
 	var $path = null;
 	var $profileName = null;
@@ -191,7 +191,7 @@ class Pusher
 		$this->rrevfile = $this->profile['ftp']['path'].'/'.'rev';
 		$this->lrevfile = '/tmp/'.$this->profile['ftp']['host'].'-rev';
 
-		$this->ftp  = \Pusher\Connector\Factory::create($this->profile['ftp']['type'], $this->profile['ftp']['host'], $this->profile['ftp']['port']);
+		$this->ftp  = \Pusher\Target\Factory::create($this->profile['ftp']['type'], $this->profile['ftp']['host'], $this->profile['ftp']['port']);
 		$this->e('Connecting to FTP '.$this->profile['ftp']['host'].':'.$this->profile['ftp']['port']);
 		$r = $this->ftp->connect();
 		if ($this->ftp->isError($r)) {

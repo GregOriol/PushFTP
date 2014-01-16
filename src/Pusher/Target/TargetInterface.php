@@ -1,8 +1,8 @@
 <?php
 
-namespace Pusher\Connector;
+namespace Pusher\Target;
 
-interface ConnectorInterface
+interface TargetInterface
 {
 	public function __construct($host, $port = false);
 	public function connect();

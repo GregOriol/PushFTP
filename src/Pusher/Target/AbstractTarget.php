@@ -1,8 +1,8 @@
 <?php
 
-namespace Pusher\Connector;
+namespace Pusher\Target;
 
-abstract class AbstractConnector implements ConnectorInterface
+abstract class AbstractTarget implements TargetInterface
 {
 	var $handle = false;
 
