@@ -4,20 +4,20 @@ namespace Pusher\Target;
 
 class Factory
 {
-	public static function create($connection_type, $host, $port_number = false)
+	public static function create($type, $host, $port_number = false)
 	{
-		switch($connection_type) {
+		switch($type) {
 			case 'ftp':
-				$ftp = new Implementation\Ftp($host, $port_number);
+				$target = new Implementation\Ftp($host, $port_number);
 				break;
 			case 'sftp':
-				$ftp = new Implementation\Sftp($host, $port_number);
+				$target = new Implementation\Sftp($host, $port_number);
 				break;
 			default:
 				throw new \Exception('No connection type set cannot choose a method to connect');
 		}
 
-		return $ftp;
+		return $target;
 	}
 }
 

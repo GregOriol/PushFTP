@@ -18,7 +18,7 @@ class Pusher
 	var $config = null;
 	var $profile = null;
 
-	var $ftp;
+	var $target;
 
 	var $lpath = null;
 	var $lpathh = null;
@@ -51,7 +51,7 @@ class Pusher
 	function parseCommandLine() {
 		// Setting up command line parser
 		$parser = new \Console_CommandLine();
-		$parser->description = 'Push from SVN to FTP.';
+		$parser->description = 'Push SCM changes to a target.';
 		$parser->version = $this->version;
 		$parser->addOption('profile', array(
 			'long_name'			=> '--profile',
@@ -177,42 +177,47 @@ class Pusher
 	}
 
 	/**
-	 * Connecting to FTP
+	 * Connecting to target
 	 *
 	 * @return void
 	 */
 	function prepareConnection() {
-		if (empty($this->profile['ftp']['path'])) {
-			$this->e('FTP path must not be empty : use "." for root folder or specify a remote folder');
+		if (!isset($this->profile['target']) || empty($this->profile['target'])) {
+			$this->e('Target configuration not found on the profile');
+			throw new \Exception('', 1);
+		}
+		
+		if (empty($this->profile['target']['path'])) {
+			$this->e('Target path must not be empty : use "." for root folder or specify a remote folder');
 			throw new \Exception('', 1);
 		}
 		
 		// TODO: refactor this
-		$this->rrevfile = $this->profile['ftp']['path'].'/'.'rev';
-		$this->lrevfile = '/tmp/'.$this->profile['ftp']['host'].'-rev';
+		$this->rrevfile = $this->profile['target']['path'].'/'.'rev';
+		$this->lrevfile = '/tmp/'.$this->profile['target']['host'].'-rev';
 
-		$this->ftp  = \Pusher\Target\Factory::create($this->profile['ftp']['type'], $this->profile['ftp']['host'], $this->profile['ftp']['port']);
-		$this->e('Connecting to FTP '.$this->profile['ftp']['host'].':'.$this->profile['ftp']['port']);
-		$r = $this->ftp->connect();
-		if ($this->ftp->isError($r)) {
-			$this->e('Could not connect to FTP '.$this->profile['ftp']['host'].':'.$this->profile['ftp']['port']);
+		$this->target  = \Pusher\Target\Factory::create($this->profile['target']['type'], $this->profile['target']['host'], $this->profile['target']['port']);
+		$this->e('Connecting to target '.$this->profile['target']['type'].': '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
+		$r = $this->target->connect();
+		if ($this->target->isError($r)) {
+			$this->e('Could not connect to target '.$this->profile['target']['type'].': '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
 			throw new \Exception('', 1);
 		}
 
-		$password = $this->profile['ftp']['password'];
+		$password = $this->profile['target']['password'];
 		if ($this->key !== null) {
-			$password = $this->_decryptPassword($this->profile['ftp']['password']);
+			$password = $this->_decryptPassword($this->profile['target']['password']);
 		}
 
-		$this->e('Logging in as '.$this->profile['ftp']['login']);
-		$r = $this->ftp->login($this->profile['ftp']['login'], $password);
-		if ($this->ftp->isError($r)) {
-			$this->e('Could not login to FTP with '.$this->profile['ftp']['login'].':'.$this->profile['ftp']['password']);
+		$this->e('Logging in as '.$this->profile['target']['login']);
+		$r = $this->target->login($this->profile['target']['login'], $password);
+		if ($this->target->isError($r)) {
+			$this->e('Could not login on target with '.$this->profile['target']['login'].':'.$this->profile['target']['password']);
 			throw new \Exception('', 1);
 		}
-		if ($this->profile['ftp']['type'] == 'ftp') {
+		if ($this->profile['target']['type'] == 'target') {
 			$this->e('Setting passive mode');
-			$this->ftp->setPassive();
+			$this->target->setPassive();
 		}
 	}
 
@@ -247,10 +252,10 @@ class Pusher
 	 * @return void
 	 **/
 	function parseRemoteRevision() {
-		$this->e('Getting FTP version');
-		$r = $this->ftp->get($this->rrevfile, $this->lrevfile);
-		if ($this->ftp->isError($r)) {
-			$this->e('No rev file found on the FTP. Use trunk rev 1 as reference ? [Y/n]');
+		$this->e('Getting target\'s version');
+		$r = $this->target->get($this->rrevfile, $this->lrevfile);
+		if ($this->target->isError($r)) {
+			$this->e('No rev file found on the target. Use trunk rev 1 as reference ? [Y/n]');
 
 			$r = readline();
 			if ($r === false) {
@@ -270,7 +275,7 @@ class Pusher
 
 		$r = strpos($this->rev, '@');
 		if ($r === false) {
-			$this->e('FTP revision '.$this->rev.' doesn\'t match the expected format path@rev');
+			$this->e('Target revision '.$this->rev.' doesn\'t match the expected format path@rev');
 			throw new \Exception('', 1);
 		} else {
 			$this->repo_rpath = substr($this->rev, 0, $r);
@@ -302,7 +307,7 @@ class Pusher
 		$pusherHelper->repo_rpath = $this->repo_rpath;
 		$this->svn_changes = array_map(array($pusherHelper, 'svn_changes_parse'), $output);
 		if (empty($this->svn_changes)) {
-			$this->e('No changes found on SVN between FTP version '.$this->rev.' and LOCAL version '.$this->newrev);
+			$this->e('No changes found on SCM between TARGET version '.$this->rev.' and LOCAL version '.$this->newrev);
 			if ($this->nfonc === true) {
 				throw new \Exception('', 0);
 			} else {
@@ -310,7 +315,7 @@ class Pusher
 			}
 		}
 		else {
-			$this->e('Found '.count($this->svn_changes).' changes on SVN between FTP version '.$this->rev.' and LOCAL version '.$this->newrev);
+			$this->e('Found '.count($this->svn_changes).' changes on SCM between TARGET version '.$this->rev.' and LOCAL version '.$this->newrev);
 		}
 	}
 
@@ -336,7 +341,7 @@ class Pusher
 		// TODO: implement rollback
 		$this->e("Rollback not implemented !!!");
 		
-		$rpath = $this->profile['ftp']['path'];
+		$rpath = $this->profile['target']['path'];
 		$rtmppath = $this->_getTmpDirName($rpath);
 		$this->_cleanupTmpDir($rtmppath);
 	}
@@ -347,9 +352,9 @@ class Pusher
 	 * @return void
 	 */
 	function _prepareChanges() {
-		$this->e('Preparing files on the FTP');
+		$this->e('Preparing files on the target');
 		
-		$rpath = $this->profile['ftp']['path'];
+		$rpath = $this->profile['target']['path'];
 		$rpath = $this->_getTmpDirName($rpath);
 		$this->_makeTmpDir($rpath);
 		
@@ -361,8 +366,8 @@ class Pusher
 				if (!$r) {
 					$self->e('Creating tmp directory '.$dir.' for file');
 					if ($self->go === true) {
-						$r = $self->ftp->mkdir($rpath.'/'.$dir, true);
-						if ($self->ftp->isError($r)) {
+						$r = $self->target->mkdir($rpath.'/'.$dir, true);
+						if ($self->target->isError($r)) {
 							$self->e('Could not perform operation, stopping.');
 							throw new \Exception('', 1);
 						}
@@ -371,8 +376,8 @@ class Pusher
 				
 				$self->e('Preparing '.$lfileh.' at '.$rfile);
 				if ($self->go === true) {
-					$r = $self->ftp->put($lfile, $rfile, true);
-					if ($self->ftp->isError($r)) {
+					$r = $self->target->put($lfile, $rfile, true);
+					if ($self->target->isError($r)) {
 						$self->e('Could not perform operation, stopping.');
 						throw new \Exception('', 1);
 					}
@@ -386,8 +391,8 @@ class Pusher
 					if (!$r) {
 						$self->e('Creating tmp directory '.$rfile);
 						if ($self->go === true) {
-							$r = $self->ftp->mkdir($rfile, true);
-							if ($self->ftp->isError($r)) {
+							$r = $self->target->mkdir($rfile, true);
+							if ($self->target->isError($r)) {
 								$self->e('Could not perform operation, stopping.');
 								throw new \Exception('', 1);
 							}
@@ -400,8 +405,8 @@ class Pusher
 					if (!$r) {
 						$self->e('Creating tmp directory '.$dir.' for new file');
 						if ($self->go === true) {
-							$r = $self->ftp->mkdir($rpath.'/'.$dir, true);
-							if ($self->ftp->isError($r)) {
+							$r = $self->target->mkdir($rpath.'/'.$dir, true);
+							if ($self->target->isError($r)) {
 								$self->e('Could not perform operation, stopping.');
 								throw new \Exception('', 1);
 							}
@@ -410,8 +415,8 @@ class Pusher
 			
 					$self->e('Preparing '.$lfileh.' at '.$rfile);
 					if ($self->go === true) {
-						$r = $self->ftp->put($lfile, $rfile, ($self->lenient) ? true : false);
-						if ($self->ftp->isError($r)) {
+						$r = $self->target->put($lfile, $rfile, ($self->lenient) ? true : false);
+						if ($self->target->isError($r)) {
 							$self->e('Could not perform operation, stopping.');
 							throw new \Exception('', 1);
 						}
@@ -432,9 +437,9 @@ class Pusher
 	 * @return void
 	 */
 	function _commitChanges() {
-		$this->e('Commiting files on the FTP');
+		$this->e('Commiting files on the target');
 		
-		$rpath = $this->profile['ftp']['path'];
+		$rpath = $this->profile['target']['path'];
 		$rtmppath = $this->_getTmpDirName($rpath);
 		
 		$self = $this; // for php 5.3, could be remove when will be using php 5.4
@@ -444,8 +449,8 @@ class Pusher
 				
 				$self->e('Commiting '.$lfileh.' to '.$rfile);
 				if ($self->go === true) {
-					$r = $self->ftp->rename($rtmppath.'/'.$file, $rfile);
-					if ($self->ftp->isError($r)) {
+					$r = $self->target->rename($rtmppath.'/'.$file, $rfile);
+					if ($self->target->isError($r)) {
 						$self->e('Could not perform operation, stopping.');
 						// TODO: rollback ?
 						throw new \Exception('', 1);
@@ -458,8 +463,8 @@ class Pusher
 					if (!$r) {
 						$self->e('Creating real directory '.$rfile);
 						if ($self->go === true) {
-							$r = $self->ftp->mkdir($rfile, true);
-							if ($self->ftp->isError($r)) {
+							$r = $self->target->mkdir($rfile, true);
+							if ($self->target->isError($r)) {
 								$self->e('Could not perform operation, stopping.');
 								throw new \Exception('', 1);
 							}
@@ -472,8 +477,8 @@ class Pusher
 					if (!$r) {
 						$self->e('Creating real directory '.$dir.' for new file');
 						if ($self->go === true) {
-							$r = $self->ftp->mkdir($rpath.'/'.$dir, true);
-							if ($self->ftp->isError($r)) {
+							$r = $self->target->mkdir($rpath.'/'.$dir, true);
+							if ($self->target->isError($r)) {
 								$self->e('Could not perform operation, stopping.');
 								throw new \Exception('', 1);
 							}
@@ -482,8 +487,8 @@ class Pusher
 			
 					$self->e('Commiting '.$lfileh.' to '.$rfile);
 					if ($self->go === true) {
-						$r = $self->ftp->rename($rtmppath.'/'.$file, $rfile);
-						if ($self->ftp->isError($r)) {
+						$r = $self->target->rename($rtmppath.'/'.$file, $rfile);
+						if ($self->target->isError($r)) {
 							$self->e('Could not perform operation, stopping.');
 							throw new \Exception('', 1);
 						}
@@ -493,8 +498,8 @@ class Pusher
 			'D' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($rtmppath, $self) {
 				$self->e('Deleting '.$rfile);
 				if ($self->go === true) {
-					$r = $self->ftp->rm($rfile, true);
-					if ($self->ftp->isError($r)) {
+					$r = $self->target->rm($rfile, true);
+					if ($self->target->isError($r)) {
 						if ($self->lenient) {
 							$self->e('Could not perform operation, continuing (lenient mode).');
 						} else {
@@ -577,25 +582,25 @@ class Pusher
 	function _makeTmpDir($rtmppath) {
 		if ($this->go === true) {
 			$this->e('Preparing temporary directory '.$rtmppath);
-			$pwd = $this->ftp->pwd();
+			$pwd = $this->target->pwd();
 			
-			$r = $this->ftp->cd($rtmppath);
-			if (!$this->ftp->isError($r)) {
+			$r = $this->target->cd($rtmppath);
+			if (!$this->target->isError($r)) {
 				// If cd was successful, going back to where we were
-				$r = $this->ftp->cd($pwd);
+				$r = $this->target->cd($pwd);
 				
 				// Deleting tmp dir
 				$this->e('Found an existing temporary directory on the remote server, deleting it');
-				$r = $this->ftp->rm($rtmppath.'/', true);
-				if ($this->ftp->isError($r)) {
+				$r = $this->target->rm($rtmppath.'/', true);
+				if ($this->target->isError($r)) {
 					$this->e('Could not perform operation, stopping.');
 					throw new \Exception('', 1);
 				}
 			}
 
-			$r = $this->ftp->mkdir($rtmppath, true);
+			$r = $this->target->mkdir($rtmppath, true);
 			$this->e('Creating temporary directory');
-			if ($this->ftp->isError($r)) {
+			if ($this->target->isError($r)) {
 				$this->e('Could not perform operation, stopping.');
 				throw new \Exception('', 1);
 			}
@@ -613,8 +618,8 @@ class Pusher
 			$this->e('Cleaning up temporary directory '.$rtmppath);
 			
 			if ($this->go === true) {
-				$r = $this->ftp->rm($rtmppath.'/', true);
-				if ($this->ftp->isError($r)) {
+				$r = $this->target->rm($rtmppath.'/', true);
+				if ($this->target->isError($r)) {
 					$this->e('Could not perform operation (!)');
 				}
 			}
@@ -631,15 +636,15 @@ class Pusher
 		$directoryExists = false;
 		
 		// Checking if directory exists by trying to cd into it
-		$pwd = $this->ftp->pwd();
-		$r = $this->ftp->cd($rdir);
-		if ($this->ftp->isError($r)) {
+		$pwd = $this->target->pwd();
+		$r = $this->target->cd($rdir);
+		if ($this->target->isError($r)) {
 			$directoryExists = false;
 		} else {
 			$directoryExists = true;
 			
 			// If cd was successful, going back to where we were
-			$r = $this->ftp->cd($pwd);
+			$r = $this->target->cd($pwd);
 		}
 
 		return $directoryExists;
@@ -658,7 +663,7 @@ class Pusher
 			return;
 		}
 		
-		$rpath = $this->profile['ftp']['path'];
+		$rpath = $this->profile['target']['path'];
 		
 		$self = $this; // for php 5.3, could be remove when will be using php 5.4
 		$this->_processChanges($rpath, array(
@@ -710,8 +715,8 @@ class Pusher
 		if (is_dir($lfile)) {
 			$self->e('Updating permissions on directory '.$rfile.' to '.$permissions);
 			if ($self->go === true) {
-				$r = $self->ftp->chmod($rfile, octdec($permissions), true);
-				if ($self->ftp->isError($r)) {
+				$r = $self->target->chmod($rfile, octdec($permissions), true);
+				if ($self->target->isError($r)) {
 					$self->e('Could not perform operation, stopping.');
 					throw new \Exception('', 1);
 				}
@@ -720,8 +725,8 @@ class Pusher
 		else {
 			$self->e('Updating permissions on file '.$rfile.' to '.$permissions);
 			if ($self->go === true) {
-				$r = $self->ftp->chmod($rfile, octdec($permissions), false);
-				if ($self->ftp->isError($r)) {
+				$r = $self->target->chmod($rfile, octdec($permissions), false);
+				if ($self->target->isError($r)) {
 					$self->e('Could not perform operation, stopping.');
 					throw new \Exception('', 1);
 				}
@@ -742,7 +747,7 @@ class Pusher
 			return;
 		}
 		
-		$rpath = $this->profile['ftp']['path'];
+		$rpath = $this->profile['target']['path'];
 		$flushlist = array();
 		
 		$self = $this; // for php 5.3, could be remove when will be using php 5.4
@@ -814,11 +819,11 @@ class Pusher
 	 **/
 	function updateRemoteRevision() {
 		if ($this->go === true) {
-			$this->e('Updating FTP rev');
+			$this->e('Updating target rev');
 			file_put_contents($this->lrevfile, $this->newrev);
-			$r = $this->ftp->put($this->lrevfile, $this->rrevfile, true);
-			if ($this->ftp->isError($r)) {
-				$this->e('Could not update FTP rev.');
+			$r = $this->target->put($this->lrevfile, $this->rrevfile, true);
+			if ($this->target->isError($r)) {
+				$this->e('Could not update target rev.');
 				throw new \Exception('', 1);
 			}
 			unlink($this->lrevfile);
