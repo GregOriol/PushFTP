@@ -4,20 +4,20 @@ namespace Pusher\SCM\Implementation;
 
 class SVN extends \Pusher\SCM\AbstractSCM
 {
-	public function ___construct($root_path)
+	protected function ___construct($root_path)
 	{
 		$this->repo_root = exec('cd '.$this->root_path.' && svn info | grep \'Repository Root\' | awk \'{print $NF}\'');
 		$this->repo_url = exec('cd '.$this->root_path.' && svn info | grep \'URL\' | awk \'{print $NF}\'');
 		$this->repo_lpath = str_replace($this->repo_root.'/', '', $this->repo_url);
 	}
 
-	public function _getInitialCommit()
+	protected function _getInitialVersion()
 	{
 		// TODO: enhance search for initial commit (might not be trunk)
 		return 'trunk@1';
 	}
 
-	public function _getCurrentVersion()
+	protected function _getCurrentVersion()
 	{
 		$version = exec('cd '.$this->root_path.' && svnversion');
 
@@ -34,7 +34,7 @@ class SVN extends \Pusher\SCM\AbstractSCM
 		return $this->repo_lpath.'@'.$version;
 	}
 
-	public function _getChanges($rev, $newrev)
+	protected function _getChanges($rev, $newrev)
 	{
 		exec('cd '.$this->root_path.' && svn diff --summarize '.$this->repo_root.'/'.$rev.' '.$this->repo_root.'/'.$newrev.'', $output, $return_var);
 		if ($return_var != 0) {
@@ -44,7 +44,7 @@ class SVN extends \Pusher\SCM\AbstractSCM
 		return $output;
 	}
 
-	public function _parseChanges($v)
+	protected function _parseChanges($v)
 	{
 		$arr = explode('       ', $v);
 

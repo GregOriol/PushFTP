@@ -6,7 +6,7 @@ interface SCMInterface
 {
 	public function __construct($root_path);
 
-	public function getInitialCommit();
+	public function getInitialVersion();
 	public function getCurrentVersion();
 
 	public function getChanges($rev, $newrev);

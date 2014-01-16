@@ -29,11 +29,11 @@ abstract class AbstractSCM implements SCMInterface
 	abstract protected function ___construct($root_path);
 
 
-	public function getInitialCommit()
+	public function getInitialVersion()
 	{
-		return $this->_getInitialCommit();
+		return $this->_getInitialVersion();
 	}
-	abstract protected function _getInitialCommit();
+	abstract protected function _getInitialVersion();
 
 
 	public function getCurrentVersion()

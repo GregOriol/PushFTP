@@ -4,15 +4,14 @@ namespace Pusher\SCM\Implementation;
 
 class Git extends \Pusher\SCM\AbstractSCM
 {
-	public function ___construct($root_path)
+	protected function ___construct($root_path)
 	{
 		$this->repo_root = '';
 		$this->repo_url = '';
 		$this->repo_lpath = exec('cd '.$this->root_path.' && git rev-parse --abbrev-ref HEAD');
-		// $this->repo_lpath = '';
 	}
 
-	public function _getInitialCommit()
+	protected function _getInitialVersion()
 	{
 		$version = exec('cd '.$this->root_path.' && git rev-list --max-parents=0 HEAD');
 		
@@ -27,7 +26,7 @@ class Git extends \Pusher\SCM\AbstractSCM
 		return 'master'.'@'.$version;
 	}
 
-	public function _getCurrentVersion()
+	protected function _getCurrentVersion()
 	{
 		// $version = exec('cd '.$this->root_path.' && git log -1 --format="%H"'); // candidate for cleanup
 		$version = exec('cd '.$this->root_path.' && git rev-parse HEAD');
@@ -49,7 +48,7 @@ class Git extends \Pusher\SCM\AbstractSCM
 		return $this->repo_lpath.'@'.$version;
 	}
 
-	public function _getChanges($rev, $newrev)
+	protected function _getChanges($rev, $newrev)
 	{
 		$rev = substr($rev, strpos($rev, '@')+1);
 		$newrev = substr($newrev, strpos($newrev, '@')+1);
@@ -62,7 +61,7 @@ class Git extends \Pusher\SCM\AbstractSCM
 		return $output;
 	}
 
-	public function _parseChanges($v)
+	protected function _parseChanges($v)
 	{
 		$arr = explode("\t", $v);
 

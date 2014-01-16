@@ -248,7 +248,7 @@ class Pusher
 		$this->e('Getting target version');
 		$r = $this->target->get($this->rrevfile, $this->lrevfile);
 		if ($this->target->isError($r)) {
-			$initial_commit = $this->scm->getInitialCommit();
+			$initial_commit = $this->scm->getInitialVersion();
 			$this->e('No rev file found on the target. Use initial commit '.$initial_commit.' as reference ? [Y/n]');
 
 			$r = readline();

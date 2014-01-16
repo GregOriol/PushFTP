@@ -6,7 +6,7 @@ namespace Pusher\Target\Implementation;
 
 class Ftp extends \Pusher\Target\AbstractTarget
 {
-	public function ___construct($host, $port = false)
+	protected function ___construct($host, $port = false)
 	{
 		if (!$port) {
 			$port = 21;
@@ -18,62 +18,62 @@ class Ftp extends \Pusher\Target\AbstractTarget
 		$this->handle = new \Net_FTP($host, $port);
 	}
 
-	public function _connect()
+	protected function _connect()
 	{
 		return $this->handle->connect();
 	}
 
-	public function _login($username, $password)
+	protected function _login($username, $password)
 	{
 		return $this->handle->login($username, $password);
 	}
 
-	public function _isError($response)
+	protected function _isError($response)
 	{
 		return \PEAR::isError($response);
 	}
 
-	public function _setPassive()
+	protected function _setPassive()
 	{
 		return $this->handle->setPassive();
 	}
 
-	public function _get($remote_path, $local_path)
+	protected function _get($remote_path, $local_path)
 	{
 		return $this->handle->get($remote_path, $local_path);
 	}
 
-	public function _put($local_path, $remote_path, $overwrite)
+	protected function _put($local_path, $remote_path, $overwrite)
 	{
 		return $this->handle->put($local_path, $remote_path, $overwrite);
 	}
 
-	public function _mkdir($remote_path, $recursive)
+	protected function _mkdir($remote_path, $recursive)
 	{
 		return $this->handle->mkdir($remote_path, $recursive);
 	}
 
-	public function _pwd()
+	protected function _pwd()
 	{
 		return $this->handle->pwd();
 	}
 
-	public function _cd($remote_path)
+	protected function _cd($remote_path)
 	{
 		return $this->handle->cd($remote_path);
 	}
 
-	public function _rename($remote_path_from, $remote_path_to)
+	protected function _rename($remote_path_from, $remote_path_to)
 	{
 		return $this->handle->rename($remote_path_from, $remote_path_to);
 	}
 
-	public function _rm($remote_path, $recursive)
+	protected function _rm($remote_path, $recursive)
 	{
 		return $this->handle->rm($remote_path, $recursive);
 	}
 
-	public function _chmod($remote_path, $permissions, $recursive)
+	protected function _chmod($remote_path, $permissions, $recursive)
 	{
 		$permissions = decoct($permissions);
 		
