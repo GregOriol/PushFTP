@@ -1,8 +1,9 @@
 <?php
 
-@unlink(__DIR__ . '/pushftp.phar');
+@unlink(__DIR__ . '/build/pushftp.phar');
+@mkdir(__DIR__ . '/build/');
 
-$phar = new Phar(__DIR__ . '/pushftp.phar', FilesystemIterator::CURRENT_AS_FILEINFO | FilesystemIterator::KEY_AS_FILENAME, 'pushftp.phar');
+$phar = new Phar(__DIR__ . '/build/pushftp.phar', FilesystemIterator::CURRENT_AS_FILEINFO | FilesystemIterator::KEY_AS_FILENAME, 'pushftp.phar');
 $phar->startBuffering();
 
 // Adding folders
