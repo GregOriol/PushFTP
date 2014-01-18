@@ -4,7 +4,7 @@ namespace Pusher;
 
 class Pusher
 {
-	var $version = '0.5.0';
+	var $version = '0.5.1';
 
 	var $path = null;
 	var $profileName = null;
@@ -660,13 +660,13 @@ class Pusher
 		$self = $this;
 		$this->_processChanges($rpath, array(
 			'M' => function($rpath, $file, $lfile, $lfileh, $rfile) use (&$flushlist, $self) {
-				$permissions = $self->_checkPermissions($file);
+				$permissions = $self->_checkPermissions($file, $lfile, $lfileh);
 				if ($permissions !== false) {
 					$self->_updatePermissions($self, $rpath, $file, $lfile, $lfileh, $rfile, $permissions);
 				}
 			},
 			'A' => function($rpath, $file, $lfile, $lfileh, $rfile) use (&$flushlist, $self) {
-				$permissions = $self->_checkPermissions($file);
+				$permissions = $self->_checkPermissions($file, $lfile, $lfileh);
 				if ($permissions !== false) {
 					$self->_updatePermissions($self, $rpath, $file, $lfile, $lfileh, $rfile, $permissions);
 				}
@@ -680,20 +680,37 @@ class Pusher
 	 * @param string $file 
 	 * @return int new permissions to apply, of false
 	 */
-	protected function _checkPermissions($file) {
+	protected function _checkPermissions($file, $lfile, $lfileh) {
 		if (!isset($this->profile['permissions']) || empty($this->profile['permissions'])) {
 			return false;
 		}
 		
-		$shouldUpdatePermissions = false;
 		foreach ($this->profile['permissions'] as $pattern => $permissions) {
 			$r = fnmatch($pattern, $file);
 			if ($r) {
-				return $permissions;
+				$_permissions = explode('-', $permissions);
+				if (count($_permissions) == 2) {
+					if (is_dir($lfile)) {
+						$permission = $_permissions[0];
+					}
+					else {
+						$permission = $_permissions[1];
+					}
+				}
+				else {
+					$permission = $permissions;
+				}
+				
+				if (!preg_match('/[0-9]{4}/', $permission)) {
+					$this->e('Found new permission '.$permission.' to apply to file '.$lfileh.' but value is not a valid permission, skipping it');
+					continue;
+				}
+				
+				return $permission;
 			}
 		}
-
-		return $shouldUpdatePermissions;
+		
+		return false;
 	}
 
 	/**
@@ -707,7 +724,7 @@ class Pusher
 		if (is_dir($lfile)) {
 			$self->e('Updating permissions on directory '.$rfile.' to '.$permissions);
 			if ($self->go === true) {
-				$r = $self->target->chmod($rfile, octdec($permissions), true);
+				$r = $self->target->chmod($rfile, octdec($permissions));
 				if ($self->target->isError($r)) {
 					$self->e('Could not perform operation, stopping.');
 					throw new \Exception('', 1);
@@ -717,7 +734,7 @@ class Pusher
 		else {
 			$self->e('Updating permissions on file '.$rfile.' to '.$permissions);
 			if ($self->go === true) {
-				$r = $self->target->chmod($rfile, octdec($permissions), false);
+				$r = $self->target->chmod($rfile, octdec($permissions));
 				if ($self->target->isError($r)) {
 					$self->e('Could not perform operation, stopping.');
 					throw new \Exception('', 1);
