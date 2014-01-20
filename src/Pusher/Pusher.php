@@ -844,9 +844,9 @@ class Pusher
 	}
 
 	/**
-	 * undocumented function
+	 * Decrypts password using the AES algorithm
 	 *
-	 * @return void
+	 * @return string
 	 **/
 	protected function _decryptPassword($encryptedPassword) {
 		$encrypter = new \Crypt_AES();
