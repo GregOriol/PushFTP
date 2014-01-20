@@ -620,11 +620,12 @@ class Pusher
 
 	/**
 	 * Checking if remote directory exists
+	 * note: must be public because it is used through $self
 	 *
 	 * @param string $rdir 
 	 * @return void
 	 */
-	protected function _directoryExists($rdir) {
+	public function _directoryExists($rdir) {
 		$directoryExists = false;
 		
 		// Checking if directory exists by trying to cd into it
@@ -676,11 +677,12 @@ class Pusher
 
 	/**
 	 * Checking if the file matches one of the permission rules
+	 * note: must be public because it is used through $self
 	 *
 	 * @param string $file 
 	 * @return int new permissions to apply, of false
 	 */
-	protected function _checkPermissions($file, $lfile, $lfileh) {
+	public function _checkPermissions($file, $lfile, $lfileh) {
 		if (!isset($this->profile['permissions']) || empty($this->profile['permissions'])) {
 			return false;
 		}
@@ -715,12 +717,13 @@ class Pusher
 
 	/**
 	 * Updating permissions on a file/folder
+	 * note: must be public because it is used through $self
 	 *
 	 * @param string $file 
 	 * @param int new permissions to apply, of false
 	 * @return void
 	 */
-	protected function _updatePermissions($self, $rpath, $file, $lfile, $lfileh, $rfile, $permissions) {
+	public function _updatePermissions($self, $rpath, $file, $lfile, $lfileh, $rfile, $permissions) {
 		if (is_dir($lfile)) {
 			$self->e('Updating permissions on directory '.$rfile.' to '.$permissions);
 			if ($self->go === true) {
@@ -800,11 +803,12 @@ class Pusher
 
 	/**
 	 * Checking if the file matches the CDN flush rules
+	 * note: must be public because it is used through $self
 	 *
 	 * @param string $file 
 	 * @return boolean
 	 */
-	protected function _shouldCdnFlush($file) {
+	public function _shouldCdnFlush($file) {
 		if (!isset($this->profile['cdn']['flushlist'])) {
 			return false;
 		}
