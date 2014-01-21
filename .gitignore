@@ -1,6 +1,8 @@
 .DS_Store
+
+composer.phar
+composer.lock
+
 vendor/autoload.php
 vendor/symfony
 vendor/composer
-*.phar
-*.lock
