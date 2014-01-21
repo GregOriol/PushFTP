@@ -186,9 +186,8 @@ class Pusher
 			throw new \Exception('', 1);
 		}
 		
-		// TODO: refactor this
 		$this->rrevfile = $this->profile['target']['path'].'/'.'rev';
-		$this->lrevfile = '/tmp/'.$this->profile['target']['host'].'-rev';
+		$this->lrevfile = '/tmp/pushftp-'.sha1($this->profileName.'-'.$this->profile['target']['host'].'-'.time()).'-rev';
 		
 		$this->target = \Pusher\Target\Factory::create($this->profile['target']['type'], $this->profile['target']['host'], $this->profile['target']['port']);
 		
@@ -245,8 +244,16 @@ class Pusher
 	 **/
 	public function parseTargetRevision() {
 		$this->e('Getting target version');
+		
+		// Cleanup
+		if (file_exists($this->lrevfile)) {
+			unlink($this->lrevfile);
+		}
+		
+		// Retrieving rev file from the target
 		$r = $this->target->get($this->rrevfile, $this->lrevfile);
 		if ($this->target->isError($r)) {
+			// No rev file found, asking to use initial commit
 			$initial_commit = $this->scm->getInitialVersion();
 			$this->e('No rev file found on the target. Use initial commit '.$initial_commit.' as reference ? [Y/n]');
 
@@ -262,10 +269,15 @@ class Pusher
 				}
 			}
 		} else {
-			$this->rev = file_get_contents($this->lrevfile);
+			// Rev file found, getting the revision
+			$revdata = trim(file_get_contents($this->lrevfile));
+			$this->rev = trim($revdata);
+			
+			// Cleanup
 			unlink($this->lrevfile);
 		}
 
+		// Parsing revision and checking the value
 		$r = strpos($this->rev, '@');
 		if ($r === false) {
 			$this->e('Target revision '.$this->rev.' doesn\'t match the expected format path@rev');
