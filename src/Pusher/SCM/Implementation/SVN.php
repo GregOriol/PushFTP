@@ -56,7 +56,7 @@ class SVN extends \Pusher\SCM\AbstractSCM
 
 		return array(
 			'status' => $arr[0],
-			'file' => str_replace($this->repo_root.'/'.$this->repo_rpath.'/', '', $arr[1])
+			'file' => str_replace($this->repo_root.'/'.$this->repo_rpath.'/', '', urldecode($arr[1]))
 		);
 	}
 }

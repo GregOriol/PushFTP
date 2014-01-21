@@ -71,6 +71,7 @@ class Git extends \Pusher\SCM\AbstractSCM
 			$arr[1] = '';
 		}
 
+		// TODO: check how Git handles files with spaces or special characters
 		return array(
 			'status' => $arr[0],
 			'file' => str_replace($this->repo_root.'/'.$this->repo_rpath.'/', '', $arr[1])
