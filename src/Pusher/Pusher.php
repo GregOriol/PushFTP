@@ -4,7 +4,7 @@ namespace Pusher;
 
 class Pusher
 {
-	var $version = '0.5.2';
+	var $version = '0.5.3';
 
 	var $path = null;
 	var $profileName = null;
@@ -168,6 +168,13 @@ class Pusher
 		// Saving values
 		$this->config = $config;
 		$this->profile = $config['profiles'][$this->profileName];
+
+		// Updating local path
+		if (isset($this->profile['target']['local_path']) && !empty($this->profile['target']['local_path'])) {
+			$this->e('Using a local path \''.$this->profile['target']['local_path'].'\' different from the pushftp base path');
+			$this->lpath .= '/'.$this->profile['target']['local_path'];
+			$this->lpathh .= '/'.$this->profile['target']['local_path'];
+		}
 	}
 
 	/**
@@ -189,7 +196,12 @@ class Pusher
 		$this->rrevfile = $this->profile['target']['path'].'/'.'rev';
 		$this->lrevfile = '/tmp/pushftp-'.sha1($this->profileName.'-'.$this->profile['target']['host'].'-'.time()).'-rev';
 		
-		$this->target = \Pusher\Target\Factory::create($this->profile['target']['type'], $this->profile['target']['host'], $this->profile['target']['port']);
+		try {
+			$this->target = \Pusher\Target\Factory::create($this->profile['target']['type'], $this->profile['target']['host'], $this->profile['target']['port']);
+		} catch (\Exception $e) {
+			$this->e($e->getMessage());
+			throw new \Exception('', 1);
+		}
 		
 		$this->e('Connecting to target '.$this->profile['target']['type'].' '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
 		$r = $this->target->connect();
@@ -223,8 +235,8 @@ class Pusher
 	public function parseLocalRevision() {
 		$this->e('Getting local version');
 		
-		$this->scm = \Pusher\SCM\Factory::create($this->lpath);
 		try {
+			$this->scm = \Pusher\SCM\Factory::create($this->lpath);
 			$this->newrev = $this->scm->getCurrentVersion();
 		} catch (\Exception $e) {
 			$this->e($e->getMessage());
@@ -293,6 +305,8 @@ class Pusher
 	 * @return void
 	 **/
 	public function parseChanges() {
+		$this->e('Getting SCM changes between '.$this->rev.' and '.$this->newrev);
+		
 		// Getting changes from SCM
 		$output = $this->scm->getChanges($this->rev, $this->newrev);
 		if ($output === false) {
