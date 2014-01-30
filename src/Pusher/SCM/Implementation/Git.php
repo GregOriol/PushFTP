@@ -4,6 +4,12 @@ namespace Pusher\SCM\Implementation;
 
 class Git extends \Pusher\SCM\AbstractSCM
 {
+	protected function _detect($root_path)
+	{
+		exec('cd '.$root_path.' && git rev-parse --show-toplevel', $output, $return_var);
+		return ($return_var == 0);
+	}
+
 	protected function ___construct($root_path)
 	{
 		$this->repo_root = '';

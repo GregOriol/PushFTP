@@ -12,6 +12,12 @@ abstract class AbstractSCM implements SCMInterface
 
 	var $repo_rpath;
 
+	static public function detect($root_path)
+	{
+		return static::_detect($root_path);
+	}
+	abstract protected function _detect($root_path);
+
 	public function __construct($root_path)
 	{
 		if (!$root_path || empty($root_path)) {

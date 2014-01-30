@@ -23,10 +23,10 @@ class Factory
 
 	protected static function detectSCMType($root_path)
 	{
-		if (file_exists($root_path.'/.svn')) {
+		if (Implementation\SVN::detect($root_path)) {
 			return 'svn';
 		}
-		else if (file_exists($root_path.'/.git')) {
+		else if (Implementation\Git::detect($root_path)) {
 			return 'git';
 		}
 		

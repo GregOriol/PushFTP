@@ -4,6 +4,8 @@ namespace Pusher\SCM;
 
 interface SCMInterface
 {
+	static public function detect($root_path);
+	
 	public function __construct($root_path);
 
 	public function getInitialVersion();
