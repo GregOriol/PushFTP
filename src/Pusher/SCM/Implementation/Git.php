@@ -83,6 +83,19 @@ class Git extends \Pusher\SCM\AbstractSCM
 			'file' => str_replace($this->repo_root.'/'.$this->repo_rpath.'/', '', $arr[1])
 		);
 	}
+	
+	protected function _getDiff($rev, $newrev)
+	{
+		$rev = substr($rev, strpos($rev, '@')+1);
+		$newrev = substr($newrev, strpos($newrev, '@')+1);
+		
+		exec('cd '.$this->root_path.' && git diff '.$rev.'..'.$newrev.'', $output, $return_var);
+		if ($return_var != 0) {
+			return false;
+		}
+		
+		return $output;
+	}
 }
 
 ?>

@@ -13,6 +13,8 @@ interface SCMInterface
 
 	public function getChanges($rev, $newrev);
 	public function parseChanges($v);
+	
+	public function getDiff($rev, $newrev);
 }
 
 ?>

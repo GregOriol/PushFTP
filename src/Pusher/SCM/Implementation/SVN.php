@@ -65,6 +65,16 @@ class SVN extends \Pusher\SCM\AbstractSCM
 			'file' => str_replace($this->repo_root.'/'.$this->repo_rpath.'/', '', urldecode($arr[1]))
 		);
 	}
+
+	protected function _getDiff($rev, $newrev)
+	{
+		$diff = exec('cd '.$this->root_path.' && svn diff '.$this->repo_root.'/'.$rev.' '.$this->repo_root.'/'.$newrev.'', $output, $return_var);
+		if ($return_var != 0) {
+			return false;
+		}
+
+		return $output;
+	}
 }
 
 ?>

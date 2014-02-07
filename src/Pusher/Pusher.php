@@ -4,7 +4,7 @@ namespace Pusher;
 
 class Pusher
 {
-	var $version = '0.5.3';
+	var $version = '0.5.4';
 
 	var $path = null;
 	var $profileName = null;
@@ -34,9 +34,10 @@ class Pusher
 
 	var $tmpDir = '_tmp';
 
-	var $logfile = 'pushftp.log';
-	var $scmchangesfile = 'pushftp.scm_changes.txt';
-	var $flushlistfile = 'pushftp.flushlist.txt';
+	var $logfile 			= 'pushftp.log';
+	var $scmchangesfile 	= 'pushftp.scm_changes.txt';
+	var $scmdifffile 		= 'pushftp.scm_diff.txt';
+	var $flushlistfile 		= 'pushftp.flushlist.txt';
 
 	/**
 	 * Parsing command line
@@ -65,7 +66,7 @@ class Pusher
 		));
 		$parser->addOption('nfonc', array(
 			'long_name'			=> '--nfonc',
-			'description'		=> "no failure on no changes : exits with OK status if no changes found",
+			'description'		=> "no failure on no changes : exits with OK status if no changes found (useful with scripting or CI)",
 			'action'			=> 'StoreTrue'
 		));
 		$parser->addOption('cdnflushlist', array(
@@ -318,11 +319,15 @@ class Pusher
 		$this->scm->repo_rpath = $this->repo_rpath;
 		$this->scm_changes = array_map(array($this->scm, 'parseChanges'), $output);
 
-		// Dumping changes list to a log file
+		// Dumping changes list
 		file_put_contents($this->scmchangesfile, '');
 		foreach ($this->scm_changes as $change) {
 			file_put_contents($this->scmchangesfile, implode("\t", $change)."\n", FILE_APPEND);
 		}
+
+		// Dumping diff
+		$diff = $this->scm->getDiff($this->rev, $this->newrev);
+		file_put_contents($this->scmdifffile, implode("\n", $diff));
 
 		// Checking changes
 		if (empty($this->scm_changes)) {
