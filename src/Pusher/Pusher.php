@@ -4,7 +4,7 @@ namespace Pusher;
 
 class Pusher
 {
-	var $version = '0.5.4';
+	var $version = '0.5.5';
 
 	var $path = null;
 	var $profileName = null;
@@ -326,8 +326,7 @@ class Pusher
 		}
 
 		// Dumping diff
-		$diff = $this->scm->getDiff($this->rev, $this->newrev);
-		file_put_contents($this->scmdifffile, implode("\n", $diff));
+		$this->scm->dumpDiff($this->rev, $this->newrev, getcwd().'/'.$this->scmdifffile);
 
 		// Checking changes
 		if (empty($this->scm_changes)) {

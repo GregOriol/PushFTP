@@ -66,14 +66,11 @@ class SVN extends \Pusher\SCM\AbstractSCM
 		);
 	}
 
-	protected function _getDiff($rev, $newrev)
+	protected function _dumpDiff($rev, $newrev, $difffile)
 	{
-		$diff = exec('cd '.$this->root_path.' && svn diff '.$this->repo_root.'/'.$rev.' '.$this->repo_root.'/'.$newrev.'', $output, $return_var);
-		if ($return_var != 0) {
-			return false;
-		}
-
-		return $output;
+		$diff = exec('cd '.$this->root_path.' && svn diff '.$this->repo_root.'/'.$rev.' '.$this->repo_root.'/'.$newrev.' > '.$difffile, $output, $return_var);
+		
+		return ($return_var == 0);
 	}
 }
 

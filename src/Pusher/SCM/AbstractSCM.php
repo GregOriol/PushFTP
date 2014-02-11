@@ -63,11 +63,11 @@ abstract class AbstractSCM implements SCMInterface
 	abstract protected function _parseChanges($v);
 
 
-	public function getDiff($rev, $newrev)
+	public function dumpDiff($rev, $newrev, $difffile)
 	{
-		return $this->_getDiff($rev, $newrev);
+		return $this->_dumpDiff($rev, $newrev, $difffile);
 	}
-	abstract protected function _getDiff($rev, $newrev);
+	abstract protected function _dumpDiff($rev, $newrev, $difffile);
 }
 
 ?>

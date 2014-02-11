@@ -8,12 +8,14 @@
  *  - Console_CommandLine : http://pear.php.net/manual/en/package.console.console-commandline.php
  *  - phpseclib : http://phpseclib.sourceforge.net
  *
- * v0.5.4
+ * v0.5.5
  */
 
 /**
  * Configuration
  */
+ini_set('memory_limit', '512M');
+set_time_limit(30*60*60); // 30 min
 define('BASE_PATH', __DIR__);
 
 /**

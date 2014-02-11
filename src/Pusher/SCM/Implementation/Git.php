@@ -84,17 +84,14 @@ class Git extends \Pusher\SCM\AbstractSCM
 		);
 	}
 	
-	protected function _getDiff($rev, $newrev)
+	protected function _dumpDiff($rev, $newrev, $difffile)
 	{
 		$rev = substr($rev, strpos($rev, '@')+1);
 		$newrev = substr($newrev, strpos($newrev, '@')+1);
 		
-		exec('cd '.$this->root_path.' && git diff '.$rev.'..'.$newrev.'', $output, $return_var);
-		if ($return_var != 0) {
-			return false;
-		}
+		exec('cd '.$this->root_path.' && git diff '.$rev.'..'.$newrev.' > '.$difffile, $output, $return_var);
 		
-		return $output;
+		return ($return_var == 0);
 	}
 }
 
