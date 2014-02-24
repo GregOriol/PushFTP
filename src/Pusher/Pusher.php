@@ -4,7 +4,7 @@ namespace Pusher;
 
 class Pusher
 {
-	var $version = '0.5.5';
+	var $version = '0.5.6';
 
 	var $path = null;
 	var $profileName = null;
@@ -38,6 +38,25 @@ class Pusher
 	var $scmchangesfile 	= 'pushftp.scm_changes.txt';
 	var $scmdifffile 		= 'pushftp.scm_diff.txt';
 	var $flushlistfile 		= 'pushftp.flushlist.txt';
+
+	/**
+	 * 
+	 */
+	public function __construct() {
+		// Cleaning up output files
+		if (file_exists($this->logfile)) {
+			unlink($this->logfile);
+		}
+		if (file_exists($this->scmchangesfile)) {
+			unlink($this->scmchangesfile);
+		}
+		if (file_exists($this->scmdifffile)) {
+			unlink($this->scmdifffile);
+		}
+		if (file_exists($this->flushlistfile)) {
+			unlink($this->flushlistfile);
+		}
+	}
 
 	/**
 	 * Parsing command line
