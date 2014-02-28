@@ -1,0 +1,39 @@
+{
+	"profiles": {
+		"sampleprofile": {
+			"target": {
+				"type": "sftp",
+				"host": "192.168.1.1",
+				"port": 22,
+				"login": "test",
+				"password": "test",
+				"path": "."
+			},
+			"excludes": [
+				"pushftp.json",
+				"scripts/pushftp.phar"
+				"sql",
+				"sql/*"
+				"**/test.txt"
+			],
+			"cdn": {
+				"flushlist": [
+					"*.jpg",
+					"*.png",
+					"*.gif",
+					"*.swf",
+					"*.flv",
+					"*.css",
+					"*.js",
+					"*.ttf",
+					"*.woff",
+					"*.eot",
+					"*.svg"
+				],
+				"pathreplace": {
+					"www/": "/"
+				}
+			}
+		}
+	}
+}
