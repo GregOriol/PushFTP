@@ -68,6 +68,13 @@ abstract class AbstractSCM implements SCMInterface
 		return $this->_dumpDiff($rev, $newrev, $difffile);
 	}
 	abstract protected function _dumpDiff($rev, $newrev, $difffile);
+
+
+	public function dumpLog($rev, $newrev, $logfile)
+	{
+		return $this->_dumpLog($rev, $newrev, $logfile);
+	}
+	abstract protected function _dumpLog($rev, $newrev, $logfile);
 }
 
 ?>

@@ -72,6 +72,16 @@ class SVN extends \Pusher\SCM\AbstractSCM
 		
 		return ($return_var == 0);
 	}
+
+	protected function _dumpLog($rev, $newrev, $logfile)
+	{
+		$rev = substr($rev, strpos($rev, '@')+1);
+		$newrev = substr($newrev, strpos($newrev, '@')+1);
+		
+		$diff = exec('cd '.$this->root_path.' && svn log --revision '.$rev.':'.$newrev.' --verbose '.$this->repo_root.' > '.$logfile, $output, $return_var);
+		
+		return ($return_var == 0);
+	}
 }
 
 ?>

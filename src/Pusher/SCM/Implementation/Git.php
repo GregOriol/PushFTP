@@ -93,6 +93,16 @@ class Git extends \Pusher\SCM\AbstractSCM
 		
 		return ($return_var == 0);
 	}
+
+	protected function _dumpLog($rev, $newrev, $logfile)
+	{
+		$rev = substr($rev, strpos($rev, '@')+1);
+		$newrev = substr($newrev, strpos($newrev, '@')+1);
+		
+		exec('cd '.$this->root_path.' && git log '.$rev.'..'.$newrev.' --graph --pretty=format:"%h -%d %s (%cr) <%an>" --stat > '.$logfile, $output, $return_var);
+		
+		return ($return_var == 0);
+	}
 }
 
 ?>

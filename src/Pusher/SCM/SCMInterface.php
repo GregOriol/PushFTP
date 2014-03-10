@@ -15,6 +15,7 @@ interface SCMInterface
 	public function parseChanges($v);
 	
 	public function dumpDiff($rev, $newrev, $difffile);
+	public function dumpLog($rev, $newrev, $logfile);
 }
 
 ?>
