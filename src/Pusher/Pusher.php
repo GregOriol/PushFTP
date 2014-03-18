@@ -315,8 +315,11 @@ class Pusher
 
 		// Parsing revision and checking the value
 		$r = strpos($this->rev, '@');
-		if ($r === false) {
-			$this->e('Target revision '.$this->rev.' doesn\'t match the expected format path@rev');
+		if (strlen($this->rev) == 0) {
+			$this->e('Target revision is empty');
+			throw new \Exception('', 1);
+		} elseif ($r === false) {
+			$this->e('Target revision "'.$this->rev.'" doesn\'t match the expected format path@rev');
 			throw new \Exception('', 1);
 		} else {
 			$this->repo_rpath = substr($this->rev, 0, $r);
