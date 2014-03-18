@@ -6,7 +6,7 @@ class Git extends \Pusher\SCM\AbstractSCM
 {
 	protected function _detect($root_path)
 	{
-		exec('cd '.$root_path.' && git rev-parse --show-toplevel', $output, $return_var);
+		exec('cd '.$root_path.' && git rev-parse --show-toplevel 2>/dev/null', $output, $return_var);
 		return ($return_var == 0);
 	}
 
