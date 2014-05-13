@@ -4,7 +4,7 @@ namespace Pusher;
 
 class Pusher
 {
-	var $version = '0.5.8';
+	var $version = '0.5.9';
 
 	var $path = null;
 	var $profileName = null;
@@ -60,6 +60,10 @@ class Pusher
 		if (file_exists($this->flushlistfile)) {
 			unlink($this->flushlistfile);
 		}
+
+		// Preparing log file
+		file_put_contents($this->logfile, '');
+		$this->e('New PushFTP v'.$this->version.' session '.date('Y-m-d H:i:s'));
 	}
 
 	/**
@@ -125,9 +129,6 @@ class Pusher
 		$this->nfonc = $cli->options['nfonc'];
 		$this->cdnflushlist = $cli->options['cdnflushlist'];
 		$this->key = $cli->options['key'];
-
-		// Preparing log file
-		file_put_contents($this->logfile, '');
 
 		// Performing some checks
 		if ($this->profileName === NULL) {

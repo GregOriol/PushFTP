@@ -8,7 +8,7 @@
  *  - Console_CommandLine : http://pear.php.net/manual/en/package.console.console-commandline.php
  *  - phpseclib : http://phpseclib.sourceforge.net
  *
- * v0.5.8
+ * v0.5.9
  */
 
 /**
@@ -39,8 +39,6 @@ use \Pusher\Pusher;
 try {
 	$pusher = new Pusher();
 	$pusher->parseCommandLine();
-
-	$pusher->e('New PushFTP session '.date('Y-m-d H:i:s'));
 
 	$pusher->parseConfigFile();
 	$pusher->prepareTarget();
