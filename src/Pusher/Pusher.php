@@ -4,7 +4,7 @@ namespace Pusher;
 
 class Pusher
 {
-	var $version = '0.5.9';
+	var $version = '0.5.10';
 
 	var $path = null;
 	var $profileName = null;
@@ -240,6 +240,13 @@ class Pusher
 			$password = $this->_decryptPassword($this->profile['target']['password']);
 		}
 		
+		if (!empty($this->profile['target']['rsakey'])) {
+			$key = new \Crypt_RSA();
+			$key->setPassword($password);
+			$key->loadKey(file_get_contents($this->lpath.'/'.$this->profile['target']['rsakey']));
+			$password = $key;
+		}
+
 		$this->e('Logging in as '.$this->profile['target']['login']);
 		$r = $this->target->login($this->profile['target']['login'], $password);
 		if ($this->target->isError($r)) {

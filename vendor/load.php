@@ -20,5 +20,6 @@ set_include_path(get_include_path() . PATH_SEPARATOR . PHPSECLIB_PATH);
 
 require_once('Net/SFTP.php');
 require_once('Crypt/AES.php');
+require_once('Crypt/RSA.php');
 
 ?>
