@@ -77,7 +77,7 @@ class Ftp extends \Pusher\Target\AbstractTarget
 	{
 		$permissions = decoct($permissions);
 		
-		if ($recursive) {
+		if (!$recursive) {
 			return $this->handle->chmod($remote_path, $permissions);
 		} else {
 			return $this->handle->chmodRecursive($remote_path, $permissions);
