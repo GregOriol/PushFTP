@@ -1,0 +1,15 @@
+{
+	"profiles": {
+		"sampleprofile": {
+			"target": {
+				"type": "ftp",
+				"host": "192.168.1.1",
+				"port": 21,
+				"login": "test",
+				"password": "test",
+				"path": ".",
+				"mode": "passive"
+			}
+		}
+	}
+}
