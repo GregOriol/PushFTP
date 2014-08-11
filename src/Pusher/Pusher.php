@@ -254,7 +254,7 @@ class Pusher
 			throw new \Exception('', 1);
 		}
 
-		if ($this->profile['target']['mode'] == 'passive') {
+		if (!empty($this->profile['target']['mode']) && $this->profile['target']['mode'] == 'passive') {
 			$this->e('Setting passive mode');
 			$this->target->setPassive();
 		}
