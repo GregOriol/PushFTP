@@ -59,7 +59,7 @@ class Git extends \Pusher\SCM\AbstractSCM
 		$rev = substr($rev, strpos($rev, '@')+1);
 		$newrev = substr($newrev, strpos($newrev, '@')+1);
 		
-		exec('cd '.$this->root_path.' && git diff --name-status '.$rev.'..'.$newrev.'', $output, $return_var);
+		exec('cd '.$this->root_path.' && git diff --name-status --relative '.$rev.'..'.$newrev.'', $output, $return_var);
 		if ($return_var != 0) {
 			return false;
 		}
