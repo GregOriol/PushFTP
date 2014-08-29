@@ -4,7 +4,7 @@ namespace Pusher;
 
 class Pusher
 {
-	var $version = '0.5.12';
+	var $version = '0.5.13';
 
 	var $path = null;
 	var $profileName = null;
