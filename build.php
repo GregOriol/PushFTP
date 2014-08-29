@@ -13,7 +13,8 @@ $phar->buildFromDirectory(dirname(__FILE__), '/(src|vendor)\/.*$/');
 $phar->addFile('pushftp.php');
 $phar->setStub($phar->createDefaultStub('pushftp.php'));
 
-$phar->compressFiles(Phar::GZ);
 $phar->stopBuffering();
+
+// $phar->compressFiles(Phar::GZ);
 
 ?>
