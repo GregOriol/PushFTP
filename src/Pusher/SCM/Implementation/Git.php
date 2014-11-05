@@ -28,8 +28,7 @@ class Git extends \Pusher\SCM\AbstractSCM
 			throw new \Exception($error, 1);
 		}
 
-		// TODO: enhance search for initial commit (might not be master)
-		return 'master'.'@'.$version;
+		return $this->getBranchForCommit($version).'@'.$version;
 	}
 
 	protected function _getCurrentVersion()
@@ -51,7 +50,7 @@ class Git extends \Pusher\SCM\AbstractSCM
 			throw new \Exception($error, 1);
 		}
 		
-		return $this->repo_lpath.'@'.$version;
+		return $this->getBranchForCommit($version).'@'.$version;
 	}
 
 	protected function _getChanges($rev, $newrev)
@@ -102,6 +101,26 @@ class Git extends \Pusher\SCM\AbstractSCM
 		exec('cd '.$this->root_path.' && git log '.$rev.'..'.$newrev.' --graph --pretty=format:"%h -%d %s (%cr) <%an>" --stat > '.$logfile, $output, $return_var);
 		
 		return ($return_var == 0);
+	}
+
+
+	private function getBranchForCommit($commithash)
+	{
+		// Checking if the commit belongs to a remote branch
+		$branch = exec('cd '.$this->root_path.' && git branch -r --contains '.$commithash.' --no-color --no-column');
+		$branch = trim($branch);
+		if (empty($branch)) {
+			// Checking if the commit belongs to a local branch
+			$branch = exec('cd '.$this->root_path.' && git branch --contains '.$commithash.' --no-color --no-column');
+			$branch = str_replace('* ', '', $branch);
+			$branch = trim($branch);
+		}
+
+		if (empty($branch)) {
+			$branch = 'HEAD';
+		}
+
+		return $branch;
 	}
 }
 
