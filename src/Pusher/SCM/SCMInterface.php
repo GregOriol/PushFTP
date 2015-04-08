@@ -17,5 +17,3 @@ interface SCMInterface
 	public function dumpDiff($rev, $newrev, $difffile);
 	public function dumpLog($rev, $newrev, $logfile);
 }
-
-?>

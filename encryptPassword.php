@@ -66,5 +66,3 @@ $encrypter = new Crypt_AES();
 $encrypter->setKey($key);
 $pass_encrypt = $encrypter->encrypt($pass);
 echo base64_encode($pass_encrypt)."\n";
-
-?>

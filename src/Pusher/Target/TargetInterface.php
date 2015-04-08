@@ -24,5 +24,3 @@ interface TargetInterface
 
 	public function chmod($remote_path, $permissions, $recursive = false);
 }
-
-?>

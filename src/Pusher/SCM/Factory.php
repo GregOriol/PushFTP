@@ -33,5 +33,3 @@ class Factory
 		return 'not detected';
 	}
 }
-
-?>

@@ -16,5 +16,3 @@ $phar->setStub($phar->createDefaultStub('pushftp.php'));
 $phar->stopBuffering();
 
 // $phar->compressFiles(Phar::GZ);
-
-?>

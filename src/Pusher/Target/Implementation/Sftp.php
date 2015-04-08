@@ -79,5 +79,3 @@ class Sftp extends \Pusher\Target\AbstractTarget
 		return $this->handle->chmod($permissions, $remote_path, $recursive);
 	}
 }
-
-?>

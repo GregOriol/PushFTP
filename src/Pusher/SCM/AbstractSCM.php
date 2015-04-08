@@ -76,5 +76,3 @@ abstract class AbstractSCM implements SCMInterface
 	}
 	abstract protected function _dumpLog($rev, $newrev, $logfile);
 }
-
-?>

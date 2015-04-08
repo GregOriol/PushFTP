@@ -939,5 +939,3 @@ class Pusher
 		file_put_contents($this->logfile, $str."\n", FILE_APPEND);
 	}
 }
-
-?>

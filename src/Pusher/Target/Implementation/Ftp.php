@@ -84,5 +84,3 @@ class Ftp extends \Pusher\Target\AbstractTarget
 		}
 	}
 }
-
-?>

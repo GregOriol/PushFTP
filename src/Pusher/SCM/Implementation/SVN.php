@@ -83,5 +83,3 @@ class SVN extends \Pusher\SCM\AbstractSCM
 		return ($return_var == 0);
 	}
 }
-
-?>
