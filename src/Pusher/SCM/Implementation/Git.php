@@ -28,7 +28,7 @@ class Git extends \Pusher\SCM\AbstractSCM
 			throw new \Exception($error, 1);
 		}
 
-		return $this->getBranchForCommit($version).'@'.$version;
+		return $this->getTagOrBranchForCommit($version).'@'.$version;
 	}
 
 	protected function _getCurrentVersion()
@@ -50,7 +50,7 @@ class Git extends \Pusher\SCM\AbstractSCM
 			throw new \Exception($error, 1);
 		}
 		
-		return $this->getBranchForCommit($version).'@'.$version;
+		return $this->getTagOrBranchForCommit($version).'@'.$version;
 	}
 
 	protected function _getChanges($rev, $newrev)
@@ -104,24 +104,33 @@ class Git extends \Pusher\SCM\AbstractSCM
 	}
 
 
-	private function getBranchForCommit($commithash)
+	private function getTagOrBranchForCommit($commithash)
 	{
+		// Checking if the commit belongs to a tag
+		$tag = exec('cd '.$this->root_path.' && git tag --points-at '.$commithash.' --no-column');
+		$tag = trim($tag);
+
+		if (!empty($tag)) {
+			return $tag;
+		}
+
 		// Checking if the commit belongs to a remote branch
-		$branch = exec('cd '.$this->root_path.' && git branch -r --contains '.$commithash.' --no-color --no-column');
+		$branch = exec('cd '.$this->root_path.' && git branch --remotes --contains '.$commithash.' --no-color --no-column');
 		$branch = trim($branch);
-		if (empty($branch)) {
-			// Checking if the commit belongs to a local branch
-			$branch = exec('cd '.$this->root_path.' && git branch --contains '.$commithash.' --no-color --no-column');
-			$branch = str_replace('* ', '', $branch);
-			$branch = trim($branch);
+
+		if (!empty($branch)) {
+			return $branch;
 		}
 
-		if (empty($branch)) {
-			$branch = 'HEAD';
+		// Checking if the commit belongs to a local branch
+		$branch = exec('cd '.$this->root_path.' && git branch --contains '.$commithash.' --no-color --no-column');
+		$branch = str_replace('* ', '', $branch);
+		$branch = trim($branch);
+
+		if (!empty($branch)) {
+			return $branch;
 		}
 
-		return $branch;
+		return 'HEAD';
 	}
 }
-
-?>
