@@ -66,6 +66,32 @@ class PushFTP
 		$this->e('New PushFTP v'.$this->version.' session '.date('Y-m-d H:i:s'));
 	}
 
+	public function run() {
+		$this->parseCommandLine();
+
+		$this->parseConfigFile();
+		$this->prepareTarget();
+
+		$this->parseLocalRevision();
+		$this->parseTargetRevision();
+
+		$this->parseChanges();
+		try {
+			$this->pushChanges();
+		} catch (Exception $e) {
+			$this->rollbackChanges();
+			throw new \Exception('', 1);
+		}
+
+		$this->checkPermissions();
+
+		if ($this->cdnflushlist) {
+			$this->makeCdnFlushList();
+		}
+
+		$this->updateRemoteRevision();
+	}
+
 	/**
 	 * Parsing command line
 	 *

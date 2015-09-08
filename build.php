@@ -7,7 +7,7 @@ $phar = new Phar(__DIR__ . '/build/pushftp.phar', FilesystemIterator::CURRENT_AS
 $phar->startBuffering();
 
 // Adding folders
-$phar->buildFromDirectory(dirname(__FILE__), '/(src|vendor)\/.*$/');
+$phar->buildFromDirectory(__DIR__, '/(src|vendor)\/.*$/');
 
 // Adding main file
 $phar->addFile('pushftp.php');

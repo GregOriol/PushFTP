@@ -36,30 +36,8 @@ require_once('vendor/load.php');
 use \PushFTP\PushFTP;
 
 try {
-	$pusher = new PushFTP();
-	$pusher->parseCommandLine();
-
-	$pusher->parseConfigFile();
-	$pusher->prepareTarget();
-
-	$pusher->parseLocalRevision();
-	$pusher->parseTargetRevision();
-
-	$pusher->parseChanges();
-	try {
-		$pusher->pushChanges();
-	} catch (Exception $e) {
-		$pusher->rollbackChanges();
-		throw new \Exception('', 1);
-	}
-
-	$pusher->checkPermissions();
-
-	if ($pusher->cdnflushlist) {
-		$pusher->makeCdnFlushList();
-	}
-
-	$pusher->updateRemoteRevision();
+	$pushftp = new PushFTP();
+	$pushftp->run();
 } catch (Exception $e) {
 	$ecode = $e->getCode();
 	if ($ecode == 0) {
