@@ -20,7 +20,6 @@ set_include_path(get_include_path() . PATH_SEPARATOR . BASE_PATH);
  */
 require_once('vendor/autoload.php');
 require_once('vendor/load.php');
-require_once('src/autoload.php');
 
 /**
  * Main
@@ -62,7 +61,7 @@ $key = $cli->options['key'];
 
 echo "\n";
 
-$encrypter = new Crypt_AES();
+$encrypter = new \phpseclib\Crypt\AES();
 $encrypter->setKey($key);
 $pass_encrypt = $encrypter->encrypt($pass);
 echo base64_encode($pass_encrypt)."\n";
