@@ -1,8 +1,8 @@
 <?php
 
-namespace Pusher;
+namespace PushFTP;
 
-class Pusher
+class PushFTP
 {
 	var $version = PUSHFTP_VERSION;
 
@@ -222,7 +222,7 @@ class Pusher
 		$this->lrevfile = '/tmp/pushftp-'.sha1($this->profileName.'-'.$this->profile['target']['host'].'-'.time()).'-rev';
 		
 		try {
-			$this->target = \Pusher\Target\Factory::create($this->profile['target']['type'], $this->profile['target']['host'], $this->profile['target']['port']);
+			$this->target = \PushFTP\Target\Factory::create($this->profile['target']['type'], $this->profile['target']['host'], $this->profile['target']['port']);
 		} catch (\Exception $e) {
 			$this->e($e->getMessage());
 			throw new \Exception('', 1);
@@ -241,7 +241,7 @@ class Pusher
 		}
 		
 		if (!empty($this->profile['target']['rsakey'])) {
-			$key = new \Crypt_RSA();
+			$key = new \phpseclib\Crypt\RSA();
 			$key->setPassword($password);
 			$key->loadKey(file_get_contents($this->lpath.'/'.$this->profile['target']['rsakey']));
 			$password = $key;
@@ -269,7 +269,7 @@ class Pusher
 		$this->e('Getting local version');
 		
 		try {
-			$this->scm = \Pusher\SCM\Factory::create($this->lpath);
+			$this->scm = \PushFTP\SCM\Factory::create($this->lpath);
 			$this->newrev = $this->scm->getCurrentVersion();
 		} catch (\Exception $e) {
 			$this->e($e->getMessage());
@@ -917,7 +917,7 @@ class Pusher
 	 * @return string
 	 **/
 	protected function _decryptPassword($encryptedPassword) {
-		$encrypter = new \Crypt_AES();
+		$encrypter = new \phpseclib\Crypt\AES();
 		$encrypter->setKey($this->key);
 
 		$password = $encrypter->decrypt(base64_decode($encryptedPassword));

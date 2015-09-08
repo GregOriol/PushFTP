@@ -1,6 +1,6 @@
 <?php
 
-namespace Pusher\Target;
+namespace PushFTP\Target;
 
 abstract class AbstractTarget implements TargetInterface
 {

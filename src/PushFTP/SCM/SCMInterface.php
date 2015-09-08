@@ -1,6 +1,6 @@
 <?php
 
-namespace Pusher\SCM;
+namespace PushFTP\SCM;
 
 interface SCMInterface
 {

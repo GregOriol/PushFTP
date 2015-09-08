@@ -1,6 +1,6 @@
 <?php
 
-namespace Pusher\Target;
+namespace PushFTP\Target;
 
 interface TargetInterface
 {

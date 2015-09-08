@@ -1,8 +1,8 @@
 <?php
 
-namespace Pusher\SCM\Implementation;
+namespace PushFTP\SCM\Implementation;
 
-class Git extends \Pusher\SCM\AbstractSCM
+class Git extends \PushFTP\SCM\AbstractSCM
 {
 	protected function _detect($root_path)
 	{

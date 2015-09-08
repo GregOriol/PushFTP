@@ -2,9 +2,9 @@
 
 // Doc : http://phpseclib.sourceforge.net/sftp/intro.html
 
-namespace Pusher\Target\Implementation;
+namespace PushFTP\Target\Implementation;
 
-class Sftp extends \Pusher\Target\AbstractTarget
+class Sftp extends \PushFTP\Target\AbstractTarget
 {
 	protected function ___construct($host, $port = false)
 	{
@@ -18,7 +18,7 @@ class Sftp extends \Pusher\Target\AbstractTarget
 
 	protected function _connect()
 	{
-		$this->handle = new \Net_SFTP($this->host, $this->port);
+		$this->handle = new \phpseclib\Net\SFTP($this->host, $this->port);
 	}
 
 	protected function _login($username, $password)

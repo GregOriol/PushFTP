@@ -12,7 +12,7 @@
 /**
  * Configuration
  */
-define('PUSHFTP_VERSION', '0.7.0');
+define('PUSHFTP_VERSION', '0.8.0');
 
 ini_set('memory_limit', '512M');
 set_time_limit(30*60*60); // 30 min
@@ -29,15 +29,14 @@ set_include_path(get_include_path() . PATH_SEPARATOR . BASE_PATH);
  */
 require_once('vendor/autoload.php');
 require_once('vendor/load.php');
-require_once('src/autoload.php');
 
 /**
  * Main
  */
-use \Pusher\Pusher;
+use \PushFTP\PushFTP;
 
 try {
-	$pusher = new Pusher();
+	$pusher = new PushFTP();
 	$pusher->parseCommandLine();
 
 	$pusher->parseConfigFile();

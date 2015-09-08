@@ -1,5 +1,12 @@
 {
+    "name": "PushFTP",
     "require": {
-        "symfony/class-loader": "2.*"
+        "symfony/class-loader": "2.*",
+        "phpseclib/phpseclib": "2.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "PushFTP\\": "src/PushFTP/"
+        }
     }
 }

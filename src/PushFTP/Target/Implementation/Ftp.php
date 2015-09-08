@@ -2,9 +2,9 @@
 
 // Doc : http://pear.php.net/package/Net_FTP/docs
 
-namespace Pusher\Target\Implementation;
+namespace PushFTP\Target\Implementation;
 
-class Ftp extends \Pusher\Target\AbstractTarget
+class Ftp extends \PushFTP\Target\AbstractTarget
 {
 	protected function ___construct($host, $port = false)
 	{
