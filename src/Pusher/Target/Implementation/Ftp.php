@@ -15,7 +15,7 @@ class Ftp extends \Pusher\Target\AbstractTarget
 		$this->host = $host;
 		$this->port = $port;
 		
-		$this->handle = new \Net_FTP($host, $port);
+		$this->handle = new \Net_FTP($host, $port, 30);
 	}
 
 	protected function _connect()

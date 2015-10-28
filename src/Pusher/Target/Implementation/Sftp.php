@@ -18,7 +18,7 @@ class Sftp extends \Pusher\Target\AbstractTarget
 
 	protected function _connect()
 	{
-		$this->handle = new \Net_SFTP($this->host, $this->port);
+		$this->handle = new \Net_SFTP($this->host, $this->port, 30);
 	}
 
 	protected function _login($username, $password)
