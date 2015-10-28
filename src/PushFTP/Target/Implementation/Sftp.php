@@ -18,7 +18,7 @@ class Sftp extends \PushFTP\Target\AbstractTarget
 
 	protected function _connect()
 	{
-		$this->handle = new \phpseclib\Net\SFTP($this->host, $this->port);
+		$this->handle = new \phpseclib\Net\SFTP($this->host, $this->port, 30);
 	}
 
 	protected function _login($username, $password)
