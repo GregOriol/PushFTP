@@ -35,7 +35,7 @@ require_once 'Console/CommandLine/Renderer.php';
  * @author    David JEAN LOUIS <izimobil@gmail.com>
  * @copyright 2007 David JEAN LOUIS
  * @license   http://opensource.org/licenses/mit-license.php MIT License 
- * @version   Release: 1.2.0
+ * @version   Release: 1.2.2
  * @link      http://pear.php.net/package/Console_CommandLine
  * @since     Class available since release 0.1.0
  */
@@ -409,12 +409,18 @@ class Console_CommandLine_Renderer_Default implements Console_CommandLine_Render
     {
         $tokens = explode("\n", $this->wrap($text));
         $ret    = $tokens[0];
-        $chunks = $this->wrap(trim(substr($text, strlen($ret))), 
-            $this->line_width - $cw);
+        $text   = trim(substr($text, strlen($ret)));
+        if (empty($text)) {
+            return $ret;
+        }
+
+        $chunks = $this->wrap($text, $this->line_width - $cw);
         $tokens = explode("\n", $chunks);
         foreach ($tokens as $token) {
             if (!empty($token)) {
                 $ret .= "\n" . str_repeat(' ', $cw) . $token;
+            } else {
+                $ret .= "\n";
             }
         }
         return $ret;
