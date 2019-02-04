@@ -4,11 +4,11 @@
 // Pre-flight checks
 //
 
-if (version_compare('7.0.0', PHP_VERSION, '>')) {
+if (version_compare('7.1.3', PHP_VERSION, '>')) {
     fwrite(
         STDERR,
         sprintf(
-            'This version of PHPUnit is supported on PHP >7.0.' . PHP_EOL .
+            'This version of Puscha is supported on PHP >7.1.3.' . PHP_EOL .
             'You are using PHP %s (%s).' . PHP_EOL,
             PHP_VERSION,
             PHP_BINARY
