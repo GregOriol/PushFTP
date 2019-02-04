@@ -1,12 +1,12 @@
 # Puscha
 
-A script to handle pushing files from an SCM to a target by calculating difference of between pushed versions.
+A deployment tool to push change from a repository (Git/SVN) to a target (SFTP/FTP) by calculating differences between pushed versions.
 
-SCMs are tipically SVN and Git repositories, and targets FTP/SFTP (thus the name!).
+SCMs can be Git or SVN repositories, and targets can be SFTP or FTP.
 
 [![Minimum PHP Version](https://img.shields.io/badge/php-%3E%3D%207.0-8892BF.svg?style=flat)](https://php.net/)
 
-Its main feature is to update a target server according to the changes made on the SCM repository. The script will check the SCM differences since last push and upload the new or changed files to the server.
+Its main feature is to update a target server according to the changes made on the SCM repository. The tool will retrieve the SCM differences since the last push and upload the new or changed files to the server.
 
 * Uploads only new/changed files
 * Deletes removed files
@@ -19,9 +19,9 @@ Its main feature is to update a target server according to the changes made on t
 
 Best used with CI setups (Jenkins, GitLab, Travis, ...).
 
-Puscha actually uses [Flysytem](http://flysystem.thephpleague.com) underneath, so many more adapters than FTP/SFTP could be available for the target: Azure, AWS S3, DigitalOcean Spaces, Dropbox, Rackspace, WebDAV, ZipArchive, ...
+Puscha actually uses [Flysytem](http://flysystem.thephpleague.com) underneath, so many more adapters than SFTP/FTP could be available for the target: Azure, AWS S3, DigitalOcean Spaces, Dropbox, Rackspace, WebDAV, ZipArchive, ...
 
-Puscha can also deploy to multiple targets at the same time.
+Puscha can deploy to multiple targets at the same time.
 
 NB: Puscha is a major refactoring of [PushFTP](https://github.com/GregOriol/PushFTP)
 
@@ -32,17 +32,17 @@ NB: Puscha is a major refactoring of [PushFTP](https://github.com/GregOriol/Push
 * Git 2.9 (maybe less)
 
 ## Configuration
-A puscha.json file at the root of the project contains all the settings. See the `samples` folder for various configurations.
+A puscha.json or puscha.yaml file at the root of the project contains all the settings. See the `samples` folder for various configurations.
 
 A JSON schema is provided (`src/schema.json`), and a test config command is available to validate the configuration file (see below).
 
 ## Usage
-Download the `puscha.phar` file, which contains everything package, from the Releases, then:
+Download the `puscha.phar` file, which contains the packaged tool, then:
 ```
 $ php puscha.phar list
 ```
 
-It is also possible to clone the repository and, after running `composer install`, then:
+It is also possible to clone the repository and, after running `composer install`, run:
 ```
 $ ./puscha list
 ```
