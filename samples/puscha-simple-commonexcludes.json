@@ -1,0 +1,32 @@
+{
+  "profiles": {
+    "sampleprofile": {
+      "target": {
+        "type": "sftp",
+        "host": "192.168.1.1",
+        "port": 22,
+        "login": "test",
+        "password": "test",
+        "path": "."
+      },
+      "excludes": ["@common"]
+    },
+    "sampleprofile2": {
+      "target": {
+        "type": "sftp",
+        "host": "192.168.1.1",
+        "port": 22,
+        "login": "test",
+        "password": "test",
+        "path": "."
+      },
+      "excludes": ["@common"]
+    }
+  },
+  "excludes": {
+    "common": [
+      "puscha.json",
+      "bbb"
+    ]
+  }
+}

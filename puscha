@@ -1,0 +1,6 @@
+#!/usr/bin/env php
+<?php
+
+// Wrapper for direct calling from commandline
+
+require_once('./puscha.php');

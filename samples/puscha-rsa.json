@@ -1,0 +1,19 @@
+{
+  "profiles": {
+    "sampleprofile": {
+      "target": {
+        "type": "sftp",
+        "host": "192.168.1.1",
+        "port": 22,
+        "login": "test",
+        "key": "private.key",
+        "password": "test",
+        "path": "."
+      },
+      "excludes": [
+        "README.markdown",
+        ".gitignore"
+      ]
+    }
+  }
+}

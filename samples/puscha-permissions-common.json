@@ -1,0 +1,54 @@
+{
+  "profiles": {
+    "sampleprofile": {
+      "target": {
+        "type": "sftp",
+        "host": "192.168.1.1",
+        "port": 22,
+        "login": "test",
+        "password": "test",
+        "path": "."
+      },
+      "excludes": [
+        "puscha.json",
+        "scripts/puscha.phar",
+        "sql",
+        "sql/*",
+        "**/test.txt"
+      ],
+      "permissions": {
+        "@common": "",
+        "john": "0777"
+      }
+    },
+    "sampleprofile2": {
+      "target": {
+        "type": "sftp",
+        "host": "192.168.1.1",
+        "port": 22,
+        "login": "test",
+        "password": "test",
+        "path": "."
+      },
+      "excludes": [
+        "puscha.json",
+        "scripts/puscha.phar",
+        "sql",
+        "sql/*",
+        "**/test.txt"
+      ],
+      "permissions": {
+        "@common": "",
+        "doe": "0666"
+      }
+    }
+  },
+  "permissions": {
+    "common": {
+      "www/uploads": "0777",
+      "www/uploads/*": "0777-0666",
+      "www/secret": "0700",
+      "www/secret/*": "0700-0600"
+    }
+  }
+}

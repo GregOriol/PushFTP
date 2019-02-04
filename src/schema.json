@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+
+  "type": "object",
+  "properties": {
+    "profiles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "object",
+            "properties": {
+              "type":     { "type": "string", "enum": ["ftp", "sftp"] },
+              "host":     { "type": "string", "title": "Hostname or IP address" },
+              "port":     { "type": "integer", "minimum": 0, "maximum": 65535 },
+              "passive":     { "type": "boolean", "title": "True to use passive FTP mode, false for active", "default": "true" },
+              "ssl":      { "type": "boolean", "title": "True to use SSL FTP mode, false for normal", "default": "false" },
+              "login":    { "type": "string" },
+              "key":      { "type": "string", "title": "RSA key file path (optional)" },
+              "password": { "type": "string", "title": "Password for the login, or if key specified password of the key" },
+              "path":     { "type": "string", "title": "Remote path (optional), only needed when the remote path is not the default one", "default": "." }
+            },
+            "required": ["type", "host", "port", "login", "password"],
+            "additionalProperties": false
+          },
+
+          "excludes": {
+            "title": "List of patterns to exclude",
+            "type": ["array"],
+            "items": {
+              "type": "string"
+            },
+            "pattern": "^@.*$",
+            "uniqueItems": true
+          },
+
+          "permissions": {
+            "title": "List permissions to set after pushing",
+            "type": ["object"],
+            "additionalProperties": { "type": "string", "pattern": "^(([0-7]{4}|public|private)(-([0-7]{4}|public|private))?|)$" },
+            "pattern": "^@.*$",
+            "uniqueItems": true
+          }
+        },
+        "required": ["target"],
+        "additionalProperties": false
+      }
+    },
+
+    "excludes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "uniqueItems": true
+      }
+    },
+
+    "permissions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "type": "string", "pattern": "^[0-7]{4}(-[0-7]{4})?$" },
+        "pattern": "^@.*$",
+        "uniqueItems": true
+      }
+    }
+  },
+  "required": ["profiles"],
+  "additionalProperties": false
+}

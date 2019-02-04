@@ -1,0 +1,25 @@
+{
+  "profiles": {
+    "sampleprofile": {
+      "target": {
+        "type": "sftp",
+        "host": "192.168.1.1",
+        "port": 22,
+        "login": "test",
+        "password": "test",
+        "path": "."
+      },
+      "excludes": [
+        "puscha.json",
+        ".gitignore",
+        "README.txt",
+        "LICENSE.txt",
+        "composer.json"
+      ],
+      "permissions": {
+        "sites/default/files": "0777",
+        "sites/default/files/*": "0777-0666"
+      }
+    }
+  }
+}
