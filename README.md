@@ -1,3 +1,7 @@
+**WARNING**: PushFTP is **DEPRECATED** in favor of [Puscha](https://github.com/GregOriol/Puscha), which is a major refactoring of this tool. No more changes will be made to this repository. Please switch to Puscha!
+
+----
+
 # PushFTP
 
 A PHP script to handle pushing files to an FTP/SFTP from an SVN/Git repository.
