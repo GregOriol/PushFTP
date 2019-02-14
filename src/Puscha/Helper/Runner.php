@@ -18,8 +18,8 @@ use RuntimeException;
 
 class Runner
 {
-    const REV_FILE       = 'rev';
-    const TMP_DIR        = '_puscha_tmp';
+    const REV_FILE       = '.puscha.rev';
+    const TMP_DIR        = '.puscha.tmp';
     const TMP_PUSH_DIR   = 'push';
     const TMP_REVERT_DIR = 'revert';
 
