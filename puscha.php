@@ -35,7 +35,7 @@ use Symfony\Component\Console\Application;
 // Starting the console application
 //
 
-$application = new Application('Puscha', '1.0.0-beta.2');
+$application = new Application('Puscha', '1.0.0-beta.3');
 
 $application->add(new Puscha\Command\Tools\EncryptPasswordCommand());
 $application->add(new Puscha\Command\Tools\DecryptPasswordCommand());
