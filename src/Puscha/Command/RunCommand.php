@@ -76,11 +76,12 @@ class RunCommand extends Command
 
             // Loading config
             $file = $input->getArgument('file');
+            $realfile = realpath($file);
 
             $output->writeln('<info>Loading config file:</info> '.$file);
             $output->writeln('');
 
-            $config = ConfigHelper::load($file, new NullLogger());
+            $config = ConfigHelper::load($realfile, new NullLogger());
 
             if ($config === null) {
                 throw new PuschaException('Configuration could not be loaded. Check that the file exists and that it is valid (use tools:test-config to validate).');
@@ -97,14 +98,15 @@ class RunCommand extends Command
 
             // Base
             $base = $input->getOption('base');
-            if (!file_exists($base)) {
+            $realbase = realpath($base);
+            if (!file_exists($realbase)) {
                 throw new PuschaException('Base path '.$base.' doesn\'t exist');
             } else {
                 // Removing last slash from base path
-                if (substr($base, -1, 1) === '/') {
-                    $base = substr($base, 0, -1);
+                if (substr($realbase, -1, 1) === '/') {
+                    $realbase = substr($realbase, 0, -1);
                 }
-                $this->logger->debug('Using base path: '.$base);
+                $this->logger->debug('Using base path: '.$realbase);
             }
 
             // Go
@@ -151,7 +153,7 @@ class RunCommand extends Command
 
             $this->logger->debug('Loaded '.count($profiles).' profile(s): '.implode(', ', $profileNames));
 
-            $handler = new RunHandler($profiles, $base, $go, $lenient, $nfonc, $key, $this->logger, $this->io);
+            $handler = new RunHandler($profiles, $realbase, $go, $lenient, $nfonc, $key, $this->logger, $this->io);
             $handler->main();
         } catch (PuschaException $e) {
             $output->writeln('<error>'.$e->getMessage().'</error>');
