@@ -3,6 +3,7 @@
 namespace Puscha\Target;
 
 use League\Flysystem\Adapter\Ftp;
+use League\Flysystem\Adapter\Ftpd;
 use League\Flysystem\FilesystemInterface;
 use League\Flysystem\Sftp\SftpAdapter;
 use Psr\Log\LoggerInterface;
@@ -27,7 +28,6 @@ class Factory
 
         switch ($targetConfiguration->getType()) {
             case 'ftp':
-                //$target = new FtpTarget($host, $port, $logger);
                 $target = new LoggableFilesystem(new Ftp([
                     'host' => $targetConfiguration->getHost(),
                     'username' => $targetConfiguration->getLogin(),
@@ -39,8 +39,19 @@ class Factory
                     'timeout' => self::TIMEOUT,
                 ]), null, $logger);
                 break;
+            case 'ftpd':
+                $target = new LoggableFilesystem(new Ftpd([
+                    'host' => $targetConfiguration->getHost(),
+                    'username' => $targetConfiguration->getLogin(),
+                    'password' => $targetConfiguration->getPassword(),
+                    'port' => $targetConfiguration->getPort(),
+                    'root' => $targetConfiguration->getPath(),
+                    'passive' => $targetConfiguration->isPassive(),
+                    'ssl' => $targetConfiguration->isSsl(),
+                    'timeout' => self::TIMEOUT,
+                ]), null, $logger);
+                break;
             case 'sftp':
-                //$target = new SftpTarget($host, $port, $logger);
                 $target = new LoggableFilesystem(new SftpAdapter([
                     'host' => $targetConfiguration->getHost(),
                     'port' => $targetConfiguration->getPort(),

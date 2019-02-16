@@ -11,7 +11,7 @@
           "target": {
             "type": "object",
             "properties": {
-              "type":     { "type": "string", "enum": ["ftp", "sftp"] },
+              "type":     { "type": "string", "enum": ["ftp", "ftpd" ,"sftp"] },
               "host":     { "type": "string", "title": "Hostname or IP address" },
               "port":     { "type": "integer", "minimum": 0, "maximum": 65535 },
               "passive":     { "type": "boolean", "title": "True to use passive FTP mode, false for active", "default": "true" },

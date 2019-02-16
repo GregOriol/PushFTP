@@ -1,6 +1,6 @@
 {
     "name": "gregoriol/puscha",
-    "description": "A deployment tool to push change from a repository (SVN/Git) to a target (FTP/SFTP)",
+    "description": "A deployment tool to push change from a repository (Git/SVN) to a target (SFTP/FTP)",
     "keywords": ["deployment", "svn", "git", "ftp", "sftp", "push", "deploy", "changes"],
     "homepage": "https://github.com/GregOriol/Puscha",
     "type": "project",

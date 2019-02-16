@@ -46,7 +46,6 @@ class RunCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-
         $this->io = new SymfonyStyle($input, $output);
 
         // Preparing a special logger to log with our level of details
