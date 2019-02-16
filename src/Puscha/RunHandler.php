@@ -5,6 +5,7 @@ namespace Puscha;
 use Psr\Log\LoggerInterface;
 use Puscha\Exception\NoChangesException;
 use Puscha\Exception\PuschaException;
+use Puscha\Helper\ConsoleStyle;
 use Puscha\Helper\DebugHelper;
 use Puscha\Helper\PasswordHelper;
 use Puscha\Helper\Symfony\Console\PrefixedConsoleLogger;
@@ -12,7 +13,6 @@ use Puscha\Helper\Runner;
 use Puscha\Model\Profile;
 use Puscha\Scm\ScmInterface;
 use Puscha\Scm\ScmVersion;
-use Symfony\Component\Console\Style\SymfonyStyle;
 
 class RunHandler
 {
@@ -31,7 +31,7 @@ class RunHandler
 
     /** @var LoggerInterface */
     protected $logger;
-    /** @var SymfonyStyle */
+    /** @var ConsoleStyle */
     protected $io;
 
     /** @var ScmInterface */
@@ -52,7 +52,7 @@ class RunHandler
      * @param bool            $nfonc
      * @param string|null     $key
      * @param LoggerInterface $logger
-     * @param SymfonyStyle    $io
+     * @param ConsoleStyle    $io
      */
     public function __construct($profiles, $base, $go, $lenient, $nfonc, $key, $logger, $io)
     {
@@ -144,7 +144,7 @@ class RunHandler
             }
 
             // Creating the runner
-            $runner = new Runner($profile, $this->base, $this->go, $this->lenient, $this->nfonc, $this->key, $this->logger);
+            $runner = new Runner($profile, $this->base, $this->go, $this->lenient, $this->nfonc, $this->key, $this->logger, $this->io);
 
             // Getting current version
             $this->setLoggerPrefix($runner->getName());
@@ -236,7 +236,7 @@ class RunHandler
             } catch (NoChangesException $e) {
                 if ($this->nfonc === true) {
                     // Not failing on no changes
-                    $this->logger->notice($e->getMessage());
+                    $this->logger->warning($e->getMessage());
                     continue;
                 } else {
                     throw $e;
@@ -298,7 +298,11 @@ class RunHandler
             $this->setLoggerPrefix($runner->getName());
 
             $runner->makeTemporaryDirectory();
-            $warnings = $runner->push();
+
+            $progressBar = $this->io->createProgressBar();
+            $warnings = $runner->push($this->io->progressCallback($progressBar));
+            $progressBar->finish();
+
             if ($warnings != 0) {
                 $result = $this->io->confirm($warnings.' warnings were encountered while preparing the changes on target '.$runner->getName().'. Continue anyway?', false);
 
@@ -318,7 +322,9 @@ class RunHandler
         foreach ($this->runners as $runner) {
             $this->setLoggerPrefix($runner->getName());
 
-            $runner->commit();
+            $progressBar = $this->io->createProgressBar();
+            $runner->commit($this->io->progressCallback($progressBar));
+            $progressBar->finish();
 
             $this->setLoggerPrefix(null);
         }
@@ -331,7 +337,9 @@ class RunHandler
         foreach ($this->runners as $runner) {
             $this->setLoggerPrefix($runner->getName());
 
-            $runner->permissions();
+            $progressBar = $this->io->createProgressBar();
+            $runner->permissions($this->io->progressCallback($progressBar));
+            $progressBar->finish();
 
             $this->setLoggerPrefix(null);
         }
@@ -344,7 +352,9 @@ class RunHandler
         foreach ($this->runners as $runner) {
             $this->setLoggerPrefix($runner->getName());
 
-            $runner->revert();
+            $progressBar = $this->io->createProgressBar();
+            $runner->revert($this->io->progressCallback($progressBar));
+            $progressBar->finish();
 
             $this->setLoggerPrefix(null);
         }

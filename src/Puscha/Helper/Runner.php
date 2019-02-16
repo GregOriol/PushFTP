@@ -38,6 +38,8 @@ class Runner
 
     /** @var LoggerInterface */
     protected $logger;
+    /** @var ConsoleStyle */
+    protected $io;
 
     /** @var TargetInterface */
     protected $target;
@@ -58,10 +60,9 @@ class Runner
      * @param bool            $nfonc
      * @param string|null     $key
      * @param LoggerInterface $logger
-     *
-     * @throws PuschaException
+     * @param ConsoleStyle    $io
      */
-    public function __construct($profile, $base, $go, $lenient, $nfonc, $key, $logger)
+    public function __construct($profile, $base, $go, $lenient, $nfonc, $key, $logger, $io)
     {
         $this->profile = $profile;
         $this->base    = $base;
@@ -71,6 +72,7 @@ class Runner
         $this->key     = $key;
 
         $this->logger  = $logger;
+        $this->io      = $io;
     }
 
     public function __debugInfo()
@@ -91,6 +93,7 @@ class Runner
 
     /**
      * @return ScmVersion|null
+     *
      * @throws PuschaException
      * @throws \Exception
      */
@@ -170,8 +173,6 @@ class Runner
 
             $this->changes[] = $change;
         }
-
-
 
         $this->logger->notice(count($this->changes).' change(s) to push');
     }
@@ -265,9 +266,13 @@ class Runner
         }
     }
 
-    public function push()
+    public function push(\Closure $progressCallback)
     {
         $warnings = 0;
+
+        $n = 0;
+
+        $progressCallback($n, count($this->changes));
 
         foreach ($this->changes as $change) {
             $file = $change->getFile();
@@ -315,13 +320,20 @@ class Runner
 
                     break;
             }
+
+            $n += 1;
+            $progressCallback($n);
         }
 
         return $warnings;
     }
 
-    public function commit()
+    public function commit(\Closure $progressCallback)
     {
+        $n = 0;
+
+        $progressCallback($n, count($this->changes));
+
         foreach ($this->changes as $change) {
             $file     = $change->getFile();
             $filePath = $this->base.'/'.$file;
@@ -380,16 +392,21 @@ class Runner
                 }
             } catch (FileExistsException $e) {
                 $this->logger->warning('Could not commit file, already exists: '.$file);
-                continue;
             } catch (FileNotFoundException $e) {
                 $this->logger->warning('Could not commit file, not found: '.$file);
-                continue;
             }
+
+            $n += 1;
+            $progressCallback($n);
         }
     }
 
-    public function permissions()
+    public function permissions(\Closure $progressCallback)
     {
+        $n = 0;
+
+        $progressCallback($n, count($this->changes));
+
         foreach ($this->changes as $change) {
             $file     = $change->getFile();
             $filePath = $this->base.'/'.$file;
@@ -397,6 +414,9 @@ class Runner
 
             $permission = $this->permissionForFile($file, $isDir);
             if (!$permission) {
+                $n += 1;
+                $progressCallback($n);
+
                 continue;
             }
 
@@ -429,11 +449,18 @@ class Runner
                 $this->logger->debug('setting back public visibility to '.decoct($savedPerm));
                 $adapter->setPermPublic($savedPerm);
             }
+
+            $n += 1;
+            $progressCallback($n);
         }
     }
 
-    public function revert()
+    public function revert(\Closure $progressCallback)
     {
+        $n = 0;
+
+        $progressCallback($n, count($this->commitedChanges));
+
         foreach ($this->commitedChanges as $change) {
             $file = $change->getFile();
             $filePath = $this->base.'/'.$file;
@@ -469,6 +496,9 @@ class Runner
 
                     break;
             }
+
+            $n += 1;
+            $progressCallback($n);
         }
     }
 

@@ -113,7 +113,7 @@ class GitScm extends AbstractScm
         $r = preg_match('/^([A-Z])	(.*)$/', $change, $matches);
 
         if ($r !== 1 || count($matches) !== 3) {
-            $this->logger->notice('Unable to parse Git change: "'.$change.'"');
+            $this->logger->warning('Unable to parse Git change: "'.$change.'"');
             return false;
         }
 

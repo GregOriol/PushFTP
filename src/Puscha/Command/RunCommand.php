@@ -8,6 +8,7 @@ use Psr\Log\NullLogger;
 use Puscha\Exception\ConfigValidationException;
 use Puscha\Exception\PuschaException;
 use Puscha\Helper\ConfigHelper;
+use Puscha\Helper\ConsoleStyle;
 use Puscha\Helper\Symfony\Console\PrefixedConsoleLogger;
 use Puscha\RunHandler;
 use Symfony\Component\Console\Command\Command;
@@ -16,11 +17,10 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 
 class RunCommand extends Command
 {
-    /** @var SymfonyStyle */
+    /** @var ConsoleStyle */
     protected $io;
     /** @var LoggerInterface */
     protected $logger;
@@ -46,18 +46,18 @@ class RunCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->io = new SymfonyStyle($input, $output);
+        $this->io = new ConsoleStyle($input, $output);
 
         // Preparing a special logger to log with our level of details
         $this->logger = new PrefixedConsoleLogger($output, array(
-            //LogLevel::EMERGENCY => OutputInterface::VERBOSITY_NORMAL,
-            //LogLevel::ALERT     => OutputInterface::VERBOSITY_NORMAL,
-            //LogLevel::CRITICAL  => OutputInterface::VERBOSITY_NORMAL,
-            //LogLevel::ERROR     => OutputInterface::VERBOSITY_NORMAL,
-            //LogLevel::WARNING   => OutputInterface::VERBOSITY_NORMAL,
-            //LogLevel::NOTICE    => OutputInterface::VERBOSITY_NORMAL,
-            //LogLevel::INFO      => OutputInterface::VERBOSITY_NORMAL,
-            //LogLevel::DEBUG     => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::EMERGENCY => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::ALERT => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::CRITICAL => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::ERROR => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::WARNING => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::NOTICE => OutputInterface::VERBOSITY_NORMAL,
+            LogLevel::INFO => OutputInterface::VERBOSITY_VERBOSE,
+            LogLevel::DEBUG => OutputInterface::VERBOSITY_DEBUG,
         ), array(
             LogLevel::EMERGENCY => ConsoleLogger::ERROR,
             LogLevel::ALERT     => ConsoleLogger::ERROR,
