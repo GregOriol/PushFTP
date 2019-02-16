@@ -88,3 +88,8 @@ Run phpcs with:
 ```
 $ php composer.phar run codestyle
 ```
+
+## Known issues
+### With pure-ftpd and hidden files not enabled
+Current flysystem's ftp implementation doesn't correctly hidden folders on pure-ftpd servers when not explicitely enabled (https://github.com/thephpleague/flysystem/issues/1006), which causes Puscha to fail creating it's temporary folders.
+Solutions: enable dot files in pure-ftp ("yes" in `/etc/pure-ftpd/conf/DisplayDotFiles`), use another ftp server (vsftp for example), use sftp, ...
