@@ -5,7 +5,7 @@ namespace Puscha\Helper;
 class DebugHelper
 {
     /**
-     * Replaces some properties in debugInfo (see __debugInfo) to prevent dumping too much non usefull information.
+     * Replaces some properties in debugInfo (see __debugInfo) to prevent dumping too much non useful information.
      *
      * @param array $debugInfo
      */
@@ -17,26 +17,14 @@ class DebugHelper
     }
 
     /**
-     * @param string|string[] $strings
+     * @param bool|null $value
+     * @param string    $true
+     * @param string    $false
+     * @param string    $null
      *
-     * @return string
+     * @return string|null
      */
-    public static function logPrefix($strings)
-    {
-        $out = '';
-
-        if (is_string($strings)) {
-            $strings = array($strings);
-        }
-
-        foreach ($strings as $string) {
-            $out .= '['.$string.'] ';
-        }
-
-        return $out;
-    }
-
-    public static function trueFalseNull($value, $true, $false, $null)
+    public static function trueFalseNull($value, $true = 'true', $false = 'false', $null = 'null')
     {
         if ($value === true) {
             return $true;
