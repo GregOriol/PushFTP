@@ -81,13 +81,6 @@ class Runner
         return $debugInfo;
     }
 
-    //public function run()
-    //{
-    //    $this->logger->info('Running '.$this->profile->getName());
-    //
-    //    $this->prepareTarget();
-    //}
-
     /**
      * @return string
      */
