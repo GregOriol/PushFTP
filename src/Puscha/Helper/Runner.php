@@ -244,24 +244,30 @@ class Runner
         if ($this->target->has(self::TMP_DIR)) {
             $this->logger->info('Found an existing temporary directory on the target, deleting it');
 
-            $r = $this->target->deleteDir(self::TMP_DIR);
-            if ($r === false) {
-                throw new PuschaException('Could not delete existing temporary directory on the target: delete it manually before trying to push again');
+            if ($this->go === true) {
+                $r = $this->target->deleteDir(self::TMP_DIR);
+                if ($r === false) {
+                    throw new PuschaException('Could not delete existing temporary directory on the target: delete it manually before trying to push again');
+                }
             }
         }
 
-        $this->target->createDir(self::TMP_DIR);
-        $this->target->createDir(self::TMP_DIR.'/'.self::TMP_PUSH_DIR);
-        $this->target->createDir(self::TMP_DIR.'/'.self::TMP_REVERT_DIR);
+        if ($this->go === true) {
+            $this->target->createDir(self::TMP_DIR);
+            $this->target->createDir(self::TMP_DIR.'/'.self::TMP_PUSH_DIR);
+            $this->target->createDir(self::TMP_DIR.'/'.self::TMP_REVERT_DIR);
+        }
     }
 
     public function deleteTemporaryDirectory()
     {
         if ($this->target->has(self::TMP_DIR)) {
-            $r = $this->target->deleteDir(self::TMP_DIR);
+            if ($this->go === true) {
+                $r = $this->target->deleteDir(self::TMP_DIR);
 
-            if ($r === false) {
-                $this->logger->warning('Could not cleanup temporary directory on the target: delete it manually before trying to push again');
+                if ($r === false) {
+                    $this->logger->warning('Could not cleanup temporary directory on the target: delete it manually before trying to push again');
+                }
             }
         }
     }
@@ -279,6 +285,8 @@ class Runner
             $filePath = $this->base.'/'.$file;
             $isDir = is_dir($filePath);
 
+            $this->logger->debug('Pushing '.$change->getType().' '.$file.'');
+
             switch ($change->getType()) {
                 case ScmChange::TYPE_ADDED:
                     if ($this->target->has($file)) {
@@ -286,10 +294,12 @@ class Runner
                         $warnings += 1;
                     }
 
-                    if ($isDir) {
-                        $this->target->createDir(self::TMP_DIR.'/'.self::TMP_PUSH_DIR.'/'.$file);
-                    } else {
-                        $this->pushFile($file, self::TMP_DIR.'/'.self::TMP_PUSH_DIR.'/'.$file);
+                    if ($this->go === true) {
+                        if ($isDir) {
+                            $this->target->createDir(self::TMP_DIR.'/'.self::TMP_PUSH_DIR.'/'.$file);
+                        } else {
+                            $this->pushFile($file, self::TMP_DIR.'/'.self::TMP_PUSH_DIR.'/'.$file);
+                        }
                     }
 
                     break;
@@ -299,10 +309,12 @@ class Runner
                         $warnings += 1;
                     }
 
-                    //if ($isDir) {
+                    //if ($this->go === true) {
+                    //    if ($isDir) {
                     //
-                    //} else {
+                    //    } else {
                     //
+                    //    }
                     //}
 
                     break;
@@ -312,10 +324,12 @@ class Runner
                         $warnings += 1;
                     }
 
-                    if ($isDir) {
-                        // should not happen
-                    } else {
-                        $this->pushFile($file, self::TMP_DIR.'/'.self::TMP_PUSH_DIR.'/'.$file);
+                    if ($this->go === true) {
+                        if ($isDir) {
+                            // should not happen
+                        } else {
+                            $this->pushFile($file, self::TMP_DIR.'/'.self::TMP_PUSH_DIR.'/'.$file);
+                        }
                     }
 
                     break;
@@ -339,6 +353,8 @@ class Runner
             $filePath = $this->base.'/'.$file;
             $isDir    = is_dir($filePath);
 
+            $this->logger->debug('Commiting '.$change->getType().' '.$file.'');
+
             try {
                 switch ($change->getType()) {
                     case ScmChange::TYPE_ADDED:
@@ -346,10 +362,12 @@ class Runner
                         //    $this->target->rename($file, self::TMP_DIR.'/'.self::TMP_REVERT_DIR.'/'.$file);
                         //}
 
-                        if ($isDir) {
-                            $this->target->createDir($file);
-                        } else {
-                            $this->target->rename(self::TMP_DIR.'/'.self::TMP_PUSH_DIR.'/'.$file, $file);
+                        if ($this->go === true) {
+                            if ($isDir) {
+                                $this->target->createDir($file);
+                            } else {
+                                $this->target->rename(self::TMP_DIR.'/'.self::TMP_PUSH_DIR.'/'.$file, $file);
+                            }
                         }
 
                         $this->commitedChanges[] = $change;
@@ -360,16 +378,18 @@ class Runner
                             $this->target->copy($file, self::TMP_DIR.'/'.self::TMP_REVERT_DIR.'/'.$file);
                         }
 
-                        // Can't know if a DELETED file is a directory or a file, so trying both
-                        try {
-                            $this->target->deleteDir($file);
-                        } catch (FlysystemException $e) {
-                            //$this->logger->debug()
-                        }
-                        try {
-                            $this->target->delete($file);
-                        } catch (FlysystemException $e) {
-                            //$this->logger->debug()
+                        if ($this->go === true) {
+                            // Can't know if a DELETED file is a directory or a file, so trying both
+                            try {
+                                $this->target->deleteDir($file);
+                            } catch (FlysystemException $e) {
+                                //$this->logger->debug()
+                            }
+                            try {
+                                $this->target->delete($file);
+                            } catch (FlysystemException $e) {
+                                //$this->logger->debug()
+                            }
                         }
 
                         $this->commitedChanges[] = $change;
@@ -380,10 +400,12 @@ class Runner
                             $this->target->rename($file, self::TMP_DIR.'/'.self::TMP_REVERT_DIR.'/'.$file);
                         }
 
-                        if ($isDir) {
-                            // should not happen
-                        } else {
-                            $this->target->rename(self::TMP_DIR.'/'.self::TMP_PUSH_DIR.'/'.$file, $file);
+                        if ($this->go === true) {
+                            if ($isDir) {
+                                // should not happen
+                            } else {
+                                $this->target->rename(self::TMP_DIR.'/'.self::TMP_PUSH_DIR.'/'.$file, $file);
+                            }
                         }
 
                         $this->commitedChanges[] = $change;
@@ -420,6 +442,8 @@ class Runner
                 continue;
             }
 
+            $this->logger->debug('Setting permissions '.$permission.' on '.$change->getType().' '.$file.'');
+
             $adapter = $this->target->getAdapter();
             if (is_int($permission) && method_exists($adapter, 'getPermPublic') && method_exists($adapter, 'setPermPublic')) {
                 // Setting the provided chmod permission as the public one
@@ -429,19 +453,21 @@ class Runner
                 $permission = 'public';
             }
 
-            switch ($change->getType()) {
-                case ScmChange::TYPE_ADDED:
-                    $this->target->setVisibility($file, $permission);
+            if ($this->go === true) {
+                switch ($change->getType()) {
+                    case ScmChange::TYPE_ADDED:
+                        $this->target->setVisibility($file, $permission);
 
-                    break;
-                case ScmChange::TYPE_DELETED:
-                    // Nothing to change on deleted files
+                        break;
+                    case ScmChange::TYPE_DELETED:
+                        // Nothing to change on deleted files
 
-                    break;
-                case ScmChange::TYPE_MODIFIED:
-                    $this->target->setVisibility($file, $permission);
+                        break;
+                    case ScmChange::TYPE_MODIFIED:
+                        $this->target->setVisibility($file, $permission);
 
-                    break;
+                        break;
+                }
             }
 
             if (isset($savedPerm)) {
@@ -466,32 +492,40 @@ class Runner
             $filePath = $this->base.'/'.$file;
             $isDir = is_dir($filePath);
 
+            $this->logger->debug('Reverting '.$change->getType().' '.$file.'');
+
             switch ($change->getType()) {
                 case ScmChange::TYPE_ADDED:
                     //if ($this->target->has(self::TMP_DIR.'/'.self::TMP_REVERT_DIR.'/'.$file)) {
                     //    $this->target->rename(self::TMP_DIR.'/'.self::TMP_REVERT_DIR.'/'.$file, $file);
                     //}
 
-                    if ($isDir) {
-                        $this->target->deleteDir($file);
-                    } else {
-                        $this->target->delete($file);
+                    if ($this->go === true) {
+                        if ($isDir) {
+                            $this->target->deleteDir($file);
+                        } else {
+                            $this->target->delete($file);
+                        }
                     }
 
                     break;
                 case ScmChange::TYPE_DELETED:
-                    //if ($isDir) {
-                    //    $this->target->createDir($file);
-                    //} else {
-                        $this->target->rename(self::TMP_DIR.'/'.self::TMP_REVERT_DIR.'/'.$file, $file);
-                    //}
+                    if ($this->go === true) {
+                        //if ($isDir) {
+                        //    $this->target->createDir($file);
+                        //} else {
+                            $this->target->rename(self::TMP_DIR.'/'.self::TMP_REVERT_DIR.'/'.$file, $file);
+                        //}
+                    }
 
                     break;
                 case ScmChange::TYPE_MODIFIED:
-                    if ($isDir) {
-                        // should not happen
-                    } else {
-                        $this->target->rename(self::TMP_DIR.'/'.self::TMP_REVERT_DIR.'/'.$file, $file);
+                    if ($this->go === true) {
+                        if ($isDir) {
+                            // should not happen
+                        } else {
+                            $this->target->rename(self::TMP_DIR.'/'.self::TMP_REVERT_DIR.'/'.$file, $file);
+                        }
                     }
 
                     break;
@@ -509,10 +543,14 @@ class Runner
      */
     public function updateVersion($version)
     {
-        if ($this->target->has(self::REV_FILE)) {
-            $this->target->update(self::REV_FILE, $version->getFullString());
-        } else {
-            $this->target->write(self::REV_FILE, $version->getFullString());
+        $this->logger->debug('Updating version');
+
+        if ($this->go === true) {
+            if ($this->target->has(self::REV_FILE)) {
+                $this->target->update(self::REV_FILE, $version->getFullString());
+            } else {
+                $this->target->write(self::REV_FILE, $version->getFullString());
+            }
         }
     }
 
