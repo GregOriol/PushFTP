@@ -55,6 +55,9 @@ The main command runs a profile from the configuration file:
 $ php puscha.phar --help run
 ```
 
+This command is best run with -v for more information on what is being done.
+It can also be run with -vvv for detailed debug logs.
+
 ### Encrypt password
 A helper command is provided to encrypt passwords:
 
