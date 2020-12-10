@@ -1,5 +1,5 @@
 {
-    "name": "PushFTP",
+    "name": "gregoriol/pushftp",
     "require": {
         "phpseclib/phpseclib": "2.*"
     },
