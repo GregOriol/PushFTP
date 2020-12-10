@@ -12,7 +12,7 @@
 /**
  * Configuration
  */
-define('PUSHFTP_VERSION', '0.8.0');
+define('PUSHFTP_VERSION', '0.8.1');
 
 ini_set('memory_limit', '512M');
 set_time_limit(30*60*60); // 30 min
