@@ -18,6 +18,8 @@ ini_set('memory_limit', '512M');
 set_time_limit(30*60*60); // 30 min
 define('BASE_PATH', __DIR__);
 
+error_reporting(E_ALL ^ E_DEPRECATED);
+
 /**
  * Base
  */
