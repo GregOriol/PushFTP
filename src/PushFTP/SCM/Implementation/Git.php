@@ -58,7 +58,7 @@ class Git extends \PushFTP\SCM\AbstractSCM
 		$rev = substr($rev, strpos($rev, '@')+1);
 		$newrev = substr($newrev, strpos($newrev, '@')+1);
 		
-		exec('cd '.$this->root_path.' && git diff --name-status --relative '.$rev.'..'.$newrev.'', $output, $return_var);
+		exec('cd '.$this->root_path.' && git diff-tree --name-status -r --relative '.$rev.'..'.$newrev.'', $output, $return_var);
 		if ($return_var != 0) {
 			return false;
 		}
@@ -82,7 +82,7 @@ class Git extends \PushFTP\SCM\AbstractSCM
 			'file' => str_replace($this->repo_root.'/'.$this->repo_rpath.'/', '', $arr[1])
 		);
 	}
-	
+
 	protected function _dumpDiff($rev, $newrev, $difffile)
 	{
 		$rev = substr($rev, strpos($rev, '@')+1);
