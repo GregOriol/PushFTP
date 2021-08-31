@@ -16,7 +16,7 @@ abstract class AbstractSCM implements SCMInterface
 	{
 		return static::_detect($root_path);
 	}
-	abstract protected function _detect($root_path);
+	abstract static protected function _detect($root_path);
 
 	public function __construct($root_path)
 	{

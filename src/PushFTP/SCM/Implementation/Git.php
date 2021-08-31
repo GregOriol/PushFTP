@@ -4,7 +4,7 @@ namespace PushFTP\SCM\Implementation;
 
 class Git extends \PushFTP\SCM\AbstractSCM
 {
-	protected function _detect($root_path)
+	static protected function _detect($root_path)
 	{
 		exec('cd '.$root_path.' && git rev-parse --show-toplevel 2>/dev/null', $output, $return_var);
 		return ($return_var == 0);
