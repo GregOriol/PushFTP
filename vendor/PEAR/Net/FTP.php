@@ -31,7 +31,7 @@ require_once 'PEAR.php';
  * @name NET_FTP_FILES_ONLY
  * @see Net_FTP::ls()
  */
-define('NET_FTP_FILES_ONLY', 0, true);
+define('NET_FTP_FILES_ONLY', 0);
 
 /**
  * Option to let the ls() method return only directories.
@@ -40,7 +40,7 @@ define('NET_FTP_FILES_ONLY', 0, true);
  * @name NET_FTP_DIRS_ONLY
  * @see Net_FTP::ls()
  */
-define('NET_FTP_DIRS_ONLY', 1, true);
+define('NET_FTP_DIRS_ONLY', 1);
 
 /**
  * Option to let the ls() method return directories and files (default).
@@ -49,7 +49,7 @@ define('NET_FTP_DIRS_ONLY', 1, true);
  * @name NET_FTP_DIRS_FILES
  * @see Net_FTP::ls()
  */
-define('NET_FTP_DIRS_FILES', 2, true);
+define('NET_FTP_DIRS_FILES', 2);
 
 /**
  * Option to let the ls() method return the raw directory listing from ftp_rawlist()
@@ -58,7 +58,7 @@ define('NET_FTP_DIRS_FILES', 2, true);
  * @name NET_FTP_RAWLIST
  * @see Net_FTP::ls()
  */
-define('NET_FTP_RAWLIST', 3, true);
+define('NET_FTP_RAWLIST', 3);
 
 /**
  * Option to indicate that non-blocking features should not be used in
@@ -68,7 +68,7 @@ define('NET_FTP_RAWLIST', 3, true);
  * @name NET_FTP_BLOCKING
  * @see Net_FTP::put()
  */
-define('NET_FTP_BLOCKING', 1, true);
+define('NET_FTP_BLOCKING', 1);
 
 /**
  * Option to indicate that non-blocking features should be used if available in
@@ -80,7 +80,7 @@ define('NET_FTP_BLOCKING', 1, true);
  * @name NET_FTP_NONBLOCKING
  * @see Net_FTP::put()
  */
-define('NET_FTP_NONBLOCKING', 2, true);
+define('NET_FTP_NONBLOCKING', 2);
 
 /**
  * Error code to indicate a failed connection
@@ -548,7 +548,7 @@ define('NET_FTP_ERR_NOSSL', -40);
  * @author    Jorrit Schippers <jschippers@php.net>
  * @copyright 1997-2008 The PHP Group
  * @license   http://www.php.net/license/3_0.txt PHP License 3.0
- * @version   Release: 1.4.0
+ * @version   Release: @package_version@
  * @link      http://pear.php.net/package/Net_FTP
  * @since     0.0.1
  * @access    public
@@ -699,7 +699,7 @@ class Net_FTP extends PEAR
      * and the $port will be left at 21. You have to set the $host manualy before
      * trying to connect or with the connect() method.
      *
-     * @param string $host    (optional) The hostname 
+     * @param string $host    (optional) The hostname
      * @param int    $port    (optional) The port
      * @param int    $timeout (optional) Sets the standard timeout
      *
@@ -716,12 +716,16 @@ class Net_FTP extends PEAR
         if (isset($port)) {
             $this->setPort($port);
         }
-        $this->_timeout                     = $timeout;
-        
+        $this->_timeout = $timeout;
+
         $this->_ls_match = array(
             'unix'    => array(
-                'pattern' => '/(?:(d)|.)([rwxts-]{9})\s+(\w+)\s+([\w\d-()?.]+)\s+'.
-                             '([\w\d-()?.]+)\s+(\w+)\s+(\S+\s+\S+\s+\S+)\s+(.+)/',
+                /*
+                 * Fix regex - based on MehrAlsNix/php-ftp-client@9cd5d0b via
+                 * https://github.com/phingofficial/phing/issues/1224
+                 */
+                'pattern' => '/(?:(d)|.)([rwxts-]{9})\s+(\w+)\s+([\w\-()?.]+)\s+'.
+                             '([\w\-()?.]+)\s+(\w+)\s+(\S+\s+\S+\s+\S+)\s+(.+)/',
                 'map'     => array(
                     'is_dir'        => 1,
                     'rights'        => 2,
@@ -1092,6 +1096,10 @@ class Net_FTP extends PEAR
             $dir_list = array();
             $mode     = NET_FTP_DIRS_ONLY;
             $dir_list = $this->ls($remote_path, $mode);
+            if (PEAR::isError($dir_list)) {
+                return $dir_list;
+            }
+
             foreach ($dir_list as $dir_entry) {
                 if ($dir_entry['name'] == '.' || $dir_entry['name'] == '..') {
                     continue;
@@ -1178,9 +1186,9 @@ class Net_FTP extends PEAR
         // going through (user, group, world)
         for ($i = 0; $i < strlen($permissions); $i++) {
             // Read permission is set but execute not yet
-            if ((int)$permissions{$i} & 4 and !((int)$permissions{$i} & 1)) {
+            if ((int)$permissions[$i] & 4 and !((int)$permissions[$i] & 1)) {
                 // Adding execute flag
-                $permissions{$i} = (int)$permissions{$i} + 1;
+                $permissions[$i] = (int)$permissions[$i] + 1;
             }
         }
 
