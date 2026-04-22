@@ -12,7 +12,7 @@
 /**
  * Configuration
  */
-define('PUSHFTP_VERSION', '0.8.3');
+define('PUSHFTP_VERSION', '0.8.4');
 
 ini_set('memory_limit', '512M');
 set_time_limit(30*60*60); // 30 min
@@ -42,9 +42,12 @@ try {
 	$pushftp->run();
 } catch (Exception $e) {
 	$ecode = $e->getCode();
-	if ($ecode == 0) {
+	if ($ecode == 1) {
+		exit(1);
+	} elseif ($ecode == 0 && $e->getMessage() === '') {
 		exit(0);
 	} else {
+		echo 'Unexpected error: '.$e->getMessage()."\n";
 		exit(1);
 	}
 }
