@@ -27,3 +27,21 @@ A pushftp.json file at the root of the project contains all the settings. See sa
 A helper tool is provided to encrypt passwords
 
 	php encryptPassword.php --help
+
+## Generating a private/public key
+
+```
+ssh-keygen -t rsa
+```
+Choose a filename like `./preprod`
+Type a password
+
+```
+ssh-keygen -p -m pem -f ./preprod
+```
+Type the password 3 times
+
+Encrypt the password
+```
+php encryptPassword.php --password='' --key=''
+```
