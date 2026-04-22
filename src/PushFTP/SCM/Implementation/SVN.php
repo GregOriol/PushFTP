@@ -6,14 +6,14 @@ class SVN extends \PushFTP\SCM\AbstractSCM
 {
 	static protected function _detect($root_path)
 	{
-		exec('cd '.$root_path.' && svn info 2>/dev/null', $output, $return_var);
+		exec('cd '.escapeshellarg($root_path).' && svn info 2>/dev/null', $output, $return_var);
 		return ($return_var == 0);
 	}
 
 	protected function ___construct($root_path)
 	{
-		$this->repo_root = exec('cd '.$this->root_path.' && svn info | grep \'Repository Root\' | awk \'{print $NF}\'');
-		$this->repo_url = exec('cd '.$this->root_path.' && svn info | grep \'URL\' | awk \'{print $NF}\'');
+		$this->repo_root = exec('cd '.escapeshellarg($this->root_path).' && svn info | grep \'Repository Root\' | awk \'{print $NF}\'');
+		$this->repo_url = exec('cd '.escapeshellarg($this->root_path).' && svn info | grep \'URL\' | awk \'{print $NF}\'');
 		$this->repo_lpath = str_replace($this->repo_root.'/', '', $this->repo_url);
 	}
 
@@ -25,7 +25,7 @@ class SVN extends \PushFTP\SCM\AbstractSCM
 
 	protected function _getCurrentVersion()
 	{
-		$version = exec('cd '.$this->root_path.' && svnversion');
+		$version = exec('cd '.escapeshellarg($this->root_path).' && svnversion');
 
 		if (!is_numeric($version)) {
 			$error = 'Local SVN revision error, value "'.$version.'" is not a valid revision';
@@ -42,7 +42,7 @@ class SVN extends \PushFTP\SCM\AbstractSCM
 
 	protected function _getChanges($rev, $newrev)
 	{
-		exec('cd '.$this->root_path.' && svn diff --summarize '.$this->repo_root.'/'.$rev.' '.$this->repo_root.'/'.$newrev.'', $output, $return_var);
+		exec('cd '.escapeshellarg($this->root_path).' && svn diff --summarize '.escapeshellarg($this->repo_root.'/'.$rev).' '.escapeshellarg($this->repo_root.'/'.$newrev), $output, $return_var);
 		if ($return_var != 0) {
 			return false;
 		}
@@ -68,8 +68,8 @@ class SVN extends \PushFTP\SCM\AbstractSCM
 
 	protected function _dumpDiff($rev, $newrev, $difffile)
 	{
-		$diff = exec('cd '.$this->root_path.' && svn diff '.$this->repo_root.'/'.$rev.' '.$this->repo_root.'/'.$newrev.' > '.$difffile, $output, $return_var);
-		
+		$diff = exec('cd '.escapeshellarg($this->root_path).' && svn diff '.escapeshellarg($this->repo_root.'/'.$rev).' '.escapeshellarg($this->repo_root.'/'.$newrev).' > '.escapeshellarg($difffile), $output, $return_var);
+
 		return ($return_var == 0);
 	}
 
@@ -77,9 +77,9 @@ class SVN extends \PushFTP\SCM\AbstractSCM
 	{
 		$rev = substr($rev, strpos($rev, '@')+1);
 		$newrev = substr($newrev, strpos($newrev, '@')+1);
-		
-		$diff = exec('cd '.$this->root_path.' && svn log --revision '.$rev.':'.$newrev.' --verbose '.$this->repo_root.' > '.$logfile, $output, $return_var);
-		
+
+		$diff = exec('cd '.escapeshellarg($this->root_path).' && svn log --revision '.escapeshellarg($rev).':'.escapeshellarg($newrev).' --verbose '.escapeshellarg($this->repo_root).' > '.escapeshellarg($logfile), $output, $return_var);
+
 		return ($return_var == 0);
 	}
 }

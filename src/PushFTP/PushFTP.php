@@ -4,41 +4,43 @@ namespace PushFTP;
 
 class PushFTP
 {
-	var $version = PUSHFTP_VERSION;
+	protected $version = PUSHFTP_VERSION;
 
-	var $path = null;
-	var $profileName = null;
-	var $log = null;
-	var $go = null;
-	var $lenient = null;
-	var $nfonc = null;
-	var $cdnflushlist = null;
-	var $key = null;
+	protected $path = null;
+	protected $profileName = null;
+	protected $log = null;
+	protected $go = null;
+	protected $lenient = null;
+	protected $nfonc = null;
+	protected $cdnflushlist = null;
+	protected $key = null;
 
-	var $config = null;
-	var $profile = null;
+	protected $config = null;
+	protected $profile = null;
 
-	var $target;
-	var $scm;
+	protected $target;
+	protected $scm;
 
-	var $lpath = null;
-	var $lpathh = null;
+	protected $lpath = null;
+	protected $lpathh = null;
 
-	var $rrevfile;
-	var $lrevfile;
+	protected $rrevfile;
+	protected $lrevfile;
 
-	var $rev;
-	var $newrev;
+	protected $rev;
+	protected $newrev;
 	
-	var $scm_changes;
+	protected $scm_changes;
 
-	var $tmpDir = '_tmp';
+	protected $repo_rpath;
 
-	var $logfile 			= 'pushftp.log';
-	var $scmchangesfile 	= 'pushftp.scm_changes.txt';
-	var $scmdifffile 		= 'pushftp.scm_diff.txt';
-	var $scmlogfile			= 'pushftp.scm_log.txt';
-	var $flushlistfile 		= 'pushftp.flushlist.txt';
+	protected $tmpDir = '_tmp';
+
+	protected $logfile 			= 'pushftp.log';
+	protected $scmchangesfile 	= 'pushftp.scm_changes.txt';
+	protected $scmdifffile 		= 'pushftp.scm_diff.txt';
+	protected $scmlogfile			= 'pushftp.scm_log.txt';
+	protected $flushlistfile 		= 'pushftp.flushlist.txt';
 
 	/**
 	 * 
@@ -78,7 +80,7 @@ class PushFTP
 		$this->parseChanges();
 		try {
 			$this->pushChanges();
-		} catch (Exception $e) {
+		} catch (\Exception $e) {
 			$this->rollbackChanges();
 			throw new \Exception('', 1);
 		}
@@ -166,7 +168,7 @@ class PushFTP
 			$this->e('/!\ DRY RUN /!\\');
 		}
 
-		if ($this->lenient !== true) {
+		if ($this->lenient === true) {
 			$this->e('/!\ LENIENT MODE /!\\');
 		}
 

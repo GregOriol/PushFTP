@@ -4,13 +4,13 @@ namespace PushFTP\SCM;
 
 abstract class AbstractSCM implements SCMInterface
 {
-	var $root_path;
+	protected $root_path;
 
-	var $repo_root;
-	var $repo_url;
-	var $repo_lpath;
+	protected $repo_root;
+	protected $repo_url;
+	protected $repo_lpath;
 
-	var $repo_rpath;
+	protected $repo_rpath;
 
 	static public function detect($root_path)
 	{
@@ -21,7 +21,7 @@ abstract class AbstractSCM implements SCMInterface
 	public function __construct($root_path)
 	{
 		if (!$root_path || empty($root_path)) {
-			throw new Excpetion('No root path defined');
+			throw new \Exception('No root path defined');
 		}
 
 		$this->root_path = $root_path;
@@ -30,7 +30,7 @@ abstract class AbstractSCM implements SCMInterface
 		$this->repo_url = '';
 		$this->repo_lpath = '';
 
-		return $this->___construct($root_path);
+		$this->___construct($root_path);
 	}
 	abstract protected function ___construct($root_path);
 

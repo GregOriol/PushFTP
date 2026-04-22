@@ -4,18 +4,18 @@ namespace PushFTP\Target;
 
 abstract class AbstractTarget implements TargetInterface
 {
-	var $handle = false;
+	protected $handle = false;
 
-	var $host;
-	var $port;
+	protected $host;
+	protected $port;
 
 	public function __construct($host, $port = false)
 	{
 		if (!$host || empty($host)) {
-			throw new Excpetion('No host defined');
+			throw new \Exception('No host defined');
 		}
 
-		return $this->___construct($host, $port);
+		$this->___construct($host, $port);
 	}
 	abstract protected function ___construct($host, $port = false);
 
