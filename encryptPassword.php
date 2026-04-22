@@ -61,7 +61,7 @@ $key = $cli->options['key'];
 
 echo "\n";
 
-$encrypter = new \phpseclib\Crypt\AES();
+$encrypter = new \phpseclib3\Crypt\AES('cbc');
 $encrypter->setKey($key);
 $pass_encrypt = $encrypter->encrypt($pass);
 echo base64_encode($pass_encrypt)."\n";

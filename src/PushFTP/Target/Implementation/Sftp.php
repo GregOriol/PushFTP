@@ -18,7 +18,7 @@ class Sftp extends \PushFTP\Target\AbstractTarget
 
 	protected function _connect()
 	{
-		$this->handle = new \phpseclib\Net\SFTP($this->host, $this->port, 30);
+		$this->handle = new \phpseclib3\Net\SFTP($this->host, $this->port, 30);
 	}
 
 	protected function _login($username, $password)
@@ -44,7 +44,7 @@ class Sftp extends \PushFTP\Target\AbstractTarget
 	protected function _put($local_path, $remote_path, $overwrite)
 	{
 		// $overwrite is not used as files are Net_SFTP doesn't fail on existing files and always overwrites
-		return $this->handle->put($remote_path, $local_path, \phpseclib\Net\SFTP::SOURCE_LOCAL_FILE, -1);
+		return $this->handle->put($remote_path, $local_path, \phpseclib3\Net\SFTP::SOURCE_LOCAL_FILE, -1);
 	}
 
 	protected function _mkdir($remote_path, $recursive)

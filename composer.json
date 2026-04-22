@@ -1,7 +1,9 @@
 {
     "name": "gregoriol/pushftp",
     "require": {
-        "phpseclib/phpseclib": "2.*"
+        "php": "~8.4",
+
+        "phpseclib/phpseclib": "3.*"
     },
     "autoload": {
         "psr-4": {

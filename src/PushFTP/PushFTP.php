@@ -267,9 +267,10 @@ class PushFTP
 		}
 		
 		if (!empty($this->profile['target']['rsakey'])) {
-			$key = new \phpseclib\Crypt\RSA();
-			$key->setPassword($password);
-			$key->loadKey(file_get_contents($this->lpath.'/'.$this->profile['target']['rsakey']));
+			$key = \phpseclib3\Crypt\PublicKeyLoader::load(
+				file_get_contents($this->lpath.'/'.$this->profile['target']['rsakey']),
+				$password
+			);
 			$password = $key;
 		}
 
@@ -943,7 +944,7 @@ class PushFTP
 	 * @return string
 	 **/
 	protected function _decryptPassword($encryptedPassword) {
-		$encrypter = new \phpseclib\Crypt\AES();
+		$encrypter = new \phpseclib3\Crypt\AES('cbc');
 		$encrypter->setKey($this->key);
 
 		$password = $encrypter->decrypt(base64_decode($encryptedPassword));
