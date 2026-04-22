@@ -255,27 +255,42 @@ class PushFTP
 		}
 		
 		$this->e('Connecting to target '.$this->profile['target']['type'].' '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
-		$r = $this->target->connect();
+		try {
+			$r = $this->target->connect();
+		} catch (\Exception $e) {
+			$this->e('Could not connect to target '.$this->profile['target']['type'].': '.$this->profile['target']['host'].':'.$this->profile['target']['port'].' ('.$e->getMessage().')');
+			throw new \Exception('', 1);
+		}
 		if ($this->target->isError($r)) {
 			$this->e('Could not connect to target '.$this->profile['target']['type'].': '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
 			throw new \Exception('', 1);
 		}
-		
+
 		$password = $this->profile['target']['password'];
 		if ($this->key !== null) {
 			$password = $this->_decryptPassword($this->profile['target']['password']);
 		}
-		
+
 		if (!empty($this->profile['target']['rsakey'])) {
-			$key = \phpseclib3\Crypt\PublicKeyLoader::load(
-				file_get_contents($this->lpath.'/'.$this->profile['target']['rsakey']),
-				$password
-			);
+			try {
+				$key = \phpseclib3\Crypt\PublicKeyLoader::load(
+					file_get_contents($this->lpath.'/'.$this->profile['target']['rsakey']),
+					$password
+				);
+			} catch (\Exception $e) {
+				$this->e('Could not load RSA key: '.$e->getMessage());
+				throw new \Exception('', 1);
+			}
 			$password = $key;
 		}
 
 		$this->e('Logging in as '.$this->profile['target']['login']);
-		$r = $this->target->login($this->profile['target']['login'], $password);
+		try {
+			$r = $this->target->login($this->profile['target']['login'], $password);
+		} catch (\Exception $e) {
+			$this->e('Could not login on target with '.$this->profile['target']['login'].': '.$e->getMessage());
+			throw new \Exception('', 1);
+		}
 		if ($this->target->isError($r)) {
 			$this->e('Could not login on target with '.$this->profile['target']['login'].':'.$this->profile['target']['password']);
 			throw new \Exception('', 1);
@@ -945,11 +960,33 @@ class PushFTP
 	 **/
 	protected function _decryptPassword($encryptedPassword) {
 		$encrypter = new \phpseclib3\Crypt\AES('cbc');
-		$encrypter->setKey($this->key);
+		$encrypter->setKey($this->_padKey($this->key));
+		$encrypter->setIV(str_repeat("\0", 16));
 
 		$password = $encrypter->decrypt(base64_decode($encryptedPassword));
 
 		return $password;
+	}
+
+	/**
+	 * Pads or truncates a key to a valid AES key length (16, 24, or 32 bytes)
+	 *
+	 * phpseclib 2.x did this automatically, phpseclib 3.x requires exact key lengths.
+	 *
+	 * @param string $key
+	 * @return string
+	 */
+	protected function _padKey($key) {
+		$len = strlen($key);
+		if ($len <= 16) {
+			return str_pad($key, 16, "\0");
+		} elseif ($len <= 24) {
+			return str_pad($key, 24, "\0");
+		} elseif ($len <= 32) {
+			return str_pad($key, 32, "\0");
+		} else {
+			return substr($key, 0, 32);
+		}
 	}
 
 	/**

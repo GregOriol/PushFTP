@@ -61,7 +61,19 @@ $key = $cli->options['key'];
 
 echo "\n";
 
+$len = strlen($key);
+if ($len <= 16) {
+	$key = str_pad($key, 16, "\0");
+} elseif ($len <= 24) {
+	$key = str_pad($key, 24, "\0");
+} elseif ($len <= 32) {
+	$key = str_pad($key, 32, "\0");
+} else {
+	$key = substr($key, 0, 32);
+}
+
 $encrypter = new \phpseclib3\Crypt\AES('cbc');
 $encrypter->setKey($key);
+$encrypter->setIV(str_repeat("\0", 16));
 $pass_encrypt = $encrypter->encrypt($pass);
 echo base64_encode($pass_encrypt)."\n";
