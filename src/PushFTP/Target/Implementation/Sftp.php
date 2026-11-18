@@ -71,6 +71,34 @@ class Sftp extends \PushFTP\Target\AbstractTarget
 		}
 
 		$this->handle = new \phpseclib3\Net\SFTP($host, $this->port, 30);
+
+		if ($this->jump !== null) {
+			$this->_checkJump($this->jump);
+		}
+	}
+
+	/**
+	 * Forces the handshake, as phpseclib connects lazily and a failed tunnel would only show up at login as a broken pipe
+	 *
+	 * @param Jump $jump
+	 * @return void
+	 */
+	protected function _checkJump(array $jump): void
+	{
+		try {
+			// @: the broken pipe notice is reported below
+			@$this->getHandle()->getServerIdentification();
+		} catch (\Exception $e) {
+			$exit = '';
+			if ($this->jumpProcess !== null) {
+				$status = proc_get_status($this->jumpProcess);
+				if (!$status['running']) {
+					$exit = ', ssh exited with code '.$status['exitcode'];
+				}
+			}
+
+			throw new \Exception('Could not open the tunnel through jump host '.$jump['host'].$exit.': check that the target host/port is right and reachable from the jump host');
+		}
 	}
 
 	/**
