@@ -268,8 +268,8 @@ class PushFTP
 				throw new \Exception('', 1);
 			}
 
-			if (!empty($jump['rsakey'])) {
-				$jump['rsakey'] = $this->lpath.'/'.$jump['rsakey'];
+			if (!empty($jump['privatekey'])) {
+				$jump['privatekey'] = $this->lpath.'/'.$jump['privatekey'];
 			}
 			if (!empty($jump['known_hosts'])) {
 				$jump['known_hosts'] = $this->lpath.'/'.$jump['known_hosts'];
@@ -299,14 +299,14 @@ class PushFTP
 			$password = $this->_decryptPassword($this->profile['target']['password']);
 		}
 
-		if (!empty($this->profile['target']['rsakey'])) {
+		if (!empty($this->profile['target']['privatekey'])) {
 			try {
 				$key = \phpseclib3\Crypt\PublicKeyLoader::load(
-					file_get_contents($this->lpath.'/'.$this->profile['target']['rsakey']),
+					file_get_contents($this->lpath.'/'.$this->profile['target']['privatekey']),
 					$password
 				);
 			} catch (\Exception $e) {
-				$this->e('Could not load RSA key: '.$e->getMessage());
+				$this->e('Could not load private key: '.$e->getMessage());
 				throw new \Exception('', 1);
 			}
 			$password = $key;

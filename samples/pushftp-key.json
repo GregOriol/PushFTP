@@ -6,7 +6,7 @@
 				"host": "192.168.1.1",
 				"port": 22,
 				"login": "test",
-				"rsakey": "private.key",
+				"privatekey": "private.key",
 				"password": "test",
 				"path": "."
 			},

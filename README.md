@@ -22,7 +22,7 @@ A pushftp.json file at the root of the project contains all the settings. See sa
 ### Jump host
 An sftp target behind a bastion can be reached like ssh's ProxyJump, with a `jump` object in the target (see `samples/pushftp-jump.json`). Only `host` is required, ssh's defaults apply to the others (`~/.ssh` keys, agent and known_hosts).
 
-The tunnel is opened by the system `ssh` (`ssh -W`, OpenSSH 8.4+), the target's authentication still goes through PushFTP end-to-end. The jump's `password` is its `rsakey` passphrase, encrypted like the target's one, and only given to ssh through its environment (askpass). The jump host must be in `known_hosts`, e.g.:
+The tunnel is opened by the system `ssh` (`ssh -W`, OpenSSH 8.4+), the target's authentication still goes through PushFTP end-to-end. The jump's `password` is its `privatekey` passphrase, encrypted like the target's one, and only given to ssh through its environment (askpass). The jump host must be in `known_hosts`, e.g.:
 
 ```
 ssh-keyscan -p 22 bastion.example.com > bastion.known_hosts
@@ -40,15 +40,9 @@ A helper tool is provided to encrypt passwords
 ## Generating a private/public key
 
 ```
-ssh-keygen -t rsa
+ssh-keygen -t ed25519 -f ./preprod
 ```
-Choose a filename like `./preprod`
 Type a password
-
-```
-ssh-keygen -p -m pem -f ./preprod
-```
-Type the password 3 times
 
 Encrypt the password
 ```

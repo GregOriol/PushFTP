@@ -40,7 +40,7 @@ class Sftp extends \PushFTP\Target\AbstractTarget
 	/**
 	 * Connects through a jump host (like ssh's ProxyJump)
 	 *
-	 * @param array $jump host, and optional port, login, rsakey (path), password (rsakey's passphrase), known_hosts (path)
+	 * @param array $jump host, and optional port, login, privatekey (path), password (privatekey's passphrase), known_hosts (path)
 	 * @return void
 	 */
 	public function setJump($jump)
@@ -87,8 +87,8 @@ class Sftp extends \PushFTP\Target\AbstractTarget
 		if (!empty($this->jump['login'])) {
 			array_push($command, '-l', $this->jump['login']);
 		}
-		if (!empty($this->jump['rsakey'])) {
-			array_push($command, '-i', $this->jump['rsakey'], '-o', 'IdentitiesOnly=yes');
+		if (!empty($this->jump['privatekey'])) {
+			array_push($command, '-i', $this->jump['privatekey'], '-o', 'IdentitiesOnly=yes');
 		}
 		if (!empty($this->jump['known_hosts'])) {
 			array_push($command, '-o', 'UserKnownHostsFile='.$this->jump['known_hosts']);
