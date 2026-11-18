@@ -4,7 +4,7 @@ namespace PushFTP\SCM;
 
 class Factory
 {
-	public static function create($root_path)
+	public static function create(string $root_path): SCMInterface
 	{
 		$type = Factory::detectSCMType($root_path);
 		switch($type) {
@@ -18,7 +18,7 @@ class Factory
 		return $scm;
 	}
 
-	protected static function detectSCMType($root_path)
+	protected static function detectSCMType(string $root_path): string
 	{
 		if (Implementation\Git::detect($root_path)) {
 			return 'git';

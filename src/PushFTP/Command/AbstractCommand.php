@@ -3,6 +3,7 @@
 namespace PushFTP\Command;
 
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
@@ -17,15 +18,20 @@ abstract class AbstractCommand extends Command
 	 * @param string $label
 	 * @return string|null null if not interactive or nothing typed
 	 */
-	protected function askHidden(InputInterface $input, OutputInterface $output, $label)
+	protected function askHidden(InputInterface $input, OutputInterface $output, string $label): ?string
 	{
 		$question = new Question($label);
 		$question->setHidden(true);
 		$question->setHiddenFallback(false);
 
-		$value = $this->getHelper('question')->ask($input, $output, $question);
+		$helper = $this->getHelper('question');
+		if (!$helper instanceof QuestionHelper) {
+			throw new \Exception('Question helper not available');
+		}
 
-		return ($value === null || $value === '') ? null : $value;
+		$value = $helper->ask($input, $output, $question);
+
+		return (is_string($value) && $value !== '') ? $value : null;
 	}
 
 	/**
@@ -35,7 +41,7 @@ abstract class AbstractCommand extends Command
 	 * @param OutputInterface $output
 	 * @return string|null
 	 */
-	protected function getKey(InputInterface $input, OutputInterface $output)
+	protected function getKey(InputInterface $input, OutputInterface $output): ?string
 	{
 		$key = $input->getOption('key');
 		if ($key === null) {
@@ -45,6 +51,6 @@ abstract class AbstractCommand extends Command
 			$key = getenv('PUSHFTP_KEY');
 		}
 
-		return ($key === false || $key === '') ? null : $key;
+		return (is_string($key) && $key !== '') ? $key : null;
 	}
 }

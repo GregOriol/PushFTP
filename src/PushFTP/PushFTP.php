@@ -2,43 +2,57 @@
 
 namespace PushFTP;
 
+use PushFTP\SCM\SCMInterface;
+use PushFTP\Target\Implementation\Sftp;
+use PushFTP\Target\TargetInterface;
+
+/**
+ * @phpstan-import-type Jump from Sftp
+ * @phpstan-type Profile array{target: array{type: string, host: string, port: ?int, login: string, password: ?string, path: string, privatekey: ?string, local_path: ?string, jump: ?Jump}, excludes: list<string>, permissions: array<string, string>, cdn: array{flushlist: ?list<string>, pathreplace: array<string, string>}}
+ * @phpstan-type Options array{path: string, profile: ?string, go: bool, lenient: bool, nfonc: bool, cdnflushlist: bool, key: ?string}
+ * @phpstan-type Handler callable(string, string, string, string, string): void
+ */
 class PushFTP
 {
-	protected $version = PUSHFTP_VERSION;
+	protected string $version = PUSHFTP_VERSION;
 
-	protected $path = null;
-	protected $profileName = null;
-	protected $log = null;
-	protected $go = null;
-	protected $lenient = null;
-	protected $nfonc = null;
-	protected $cdnflushlist = null;
-	protected $key = null;
+	protected string $path = '';
+	protected string $profileName = '';
+	protected bool $go = false;
+	protected bool $lenient = false;
+	protected bool $nfonc = false;
+	protected bool $cdnflushlist = false;
+	protected ?string $key = null;
 
-	protected $config = null;
-	protected $profile = null;
+	/**
+	 * @var Profile
+	 */
+	protected array $profile;
 
-	protected $target;
-	protected $scm;
+	protected TargetInterface $target;
+	protected SCMInterface $scm;
 
-	protected $lpath = null;
-	protected $lpathh = null;
+	protected string $lpath = '';
+	protected string $lpathh = '';
 
-	protected $rrevfile;
-	protected $lrevfile;
+	protected string $rrevfile = '';
+	protected string $lrevfile = '';
 
-	protected $rev;
-	protected $newrev;
+	protected string $rev = '';
+	protected string $newrev = '';
 	
-	protected $scm_changes;
+	/**
+	 * @var list<array{status: string, file: string}>
+	 */
+	protected array $scm_changes = [];
 
-	protected $tmpDir = '_tmp';
+	protected string $tmpDir = '_tmp';
 
-	protected $logfile 			= 'pushftp.log';
-	protected $scmchangesfile 	= 'pushftp.scm_changes.txt';
-	protected $scmdifffile 		= 'pushftp.scm_diff.txt';
-	protected $scmlogfile			= 'pushftp.scm_log.txt';
-	protected $flushlistfile 		= 'pushftp.flushlist.txt';
+	protected string $logfile 			= 'pushftp.log';
+	protected string $scmchangesfile 	= 'pushftp.scm_changes.txt';
+	protected string $scmdifffile 		= 'pushftp.scm_diff.txt';
+	protected string $scmlogfile			= 'pushftp.scm_log.txt';
+	protected string $flushlistfile 		= 'pushftp.flushlist.txt';
 
 	/**
 	 * 
@@ -66,7 +80,7 @@ class PushFTP
 		$this->e('New PushFTP v'.$this->version.' session '.date('Y-m-d H:i:s'));
 	}
 
-	public function run() {
+	public function run(): void {
 		$this->parseConfigFile();
 		$this->prepareTarget();
 
@@ -93,10 +107,16 @@ class PushFTP
 	/**
 	 * Setting options
 	 *
-	 * @param array $options path, profile, go, lenient, nfonc, cdnflushlist, key
+	 * @param Options $options
 	 * @return void
 	 */
-	public function setOptions($options) {
+	public function setOptions(array $options): void {
+		// Performing some checks
+		if ($options['profile'] === null || $options['profile'] === '') {
+			$this->e('No profile defined : a profile is mandatory to proceed');
+			throw new \Exception('', 1);
+		}
+
 		$this->path = $options['path'];
 		$this->profileName = $options['profile'];
 		$this->go = $options['go'];
@@ -104,12 +124,6 @@ class PushFTP
 		$this->nfonc = $options['nfonc'];
 		$this->cdnflushlist = $options['cdnflushlist'];
 		$this->key = $options['key'];
-
-		// Performing some checks
-		if ($this->profileName === NULL) {
-			$this->e('No profile defined : a profile is mandatory to proceed');
-			throw new \Exception('', 1);
-		}
 
 		if ($this->go !== true) {
 			$this->e('/!\ DRY RUN /!\\');
@@ -119,7 +133,7 @@ class PushFTP
 			$this->e('/!\ LENIENT MODE /!\\');
 		}
 
-		if ($this->key === NULL) {
+		if ($this->key === null) {
 			$this->e('No key set, will try to read plaintext passwords');
 		} else {
 			$this->e('Key set, will try to read encrypted passwords');
@@ -131,9 +145,14 @@ class PushFTP
 	 *
 	 * @return void
 	 */
-	public function parseConfigFile() {
-		$this->lpath = realpath($this->path); // real local path
+	public function parseConfigFile(): void {
+		$lpath = realpath($this->path);
 		$this->lpathh = $this->path; // human readable local path
+		if ($lpath === false) {
+			$this->e('Invalid pushftp.json path provided '.$this->lpathh);
+			throw new \Exception('', 1);
+		}
+		$this->lpath = $lpath; // real local path
 
 		// Checking if config file exists
 		if (is_file($this->lpath)) {
@@ -154,11 +173,11 @@ class PushFTP
 			throw new \Exception('', 1);
 		}
 		$config = json_decode($pushftp, true);
-		if ($config === NULL) {
+		if (!is_array($config)) {
 			$this->e('Could not parse pushftp.json file in '.$this->lpathh);
 			throw new \Exception('', 1);
 		}
-		if (!isset($config['profiles']) || !isset($config['profiles'][$this->profileName])) {
+		if (!isset($config['profiles']) || !is_array($config['profiles']) || !isset($config['profiles'][$this->profileName])) {
 			$this->e('No profile found matching '.$this->profileName);
 			throw new \Exception('', 1);
 		}
@@ -166,11 +185,10 @@ class PushFTP
 		$this->e('Using profile '.$this->profileName);
 
 		// Saving values
-		$this->config = $config;
-		$this->profile = $config['profiles'][$this->profileName];
+		$this->profile = $this->_validateProfile($config['profiles'][$this->profileName]);
 
 		// Updating local path
-		if (isset($this->profile['target']['local_path']) && !empty($this->profile['target']['local_path'])) {
+		if ($this->profile['target']['local_path'] !== null) {
 			$this->e('Using a local path \''.$this->profile['target']['local_path'].'\' different from the pushftp base path');
 			$this->lpath .= '/'.$this->profile['target']['local_path'];
 			$this->lpathh .= '/'.$this->profile['target']['local_path'];
@@ -178,21 +196,183 @@ class PushFTP
 	}
 
 	/**
+	 * Validating the profile configuration
+	 *
+	 * @param mixed $profile
+	 * @return Profile
+	 */
+	protected function _validateProfile(mixed $profile): array {
+		if (!is_array($profile) || empty($profile['target']) || !is_array($profile['target'])) {
+			$this->_configError('Target configuration not found on the profile');
+		}
+		$target = $profile['target'];
+
+		if (!isset($target['path']) || !is_string($target['path']) || $target['path'] === '') {
+			$this->_configError('Target path must not be empty : use "." for root folder or specify a remote folder');
+		}
+
+		$jump = null;
+		if (!empty($target['jump'])) {
+			if (!is_array($target['jump'])) {
+				$this->_configError('Invalid jump configuration in the profile');
+			}
+			$jump = [
+				'host' => $this->_configString($target['jump'], 'host', 'jump host'),
+				'port' => $this->_configOptionalInt($target['jump'], 'port', 'jump port'),
+				'login' => $this->_configOptionalString($target['jump'], 'login', 'jump login'),
+				'privatekey' => $this->_configOptionalString($target['jump'], 'privatekey', 'jump privatekey'),
+				'password' => $this->_configOptionalString($target['jump'], 'password', 'jump password'),
+				'known_hosts' => $this->_configOptionalString($target['jump'], 'known_hosts', 'jump known_hosts'),
+			];
+		}
+
+		$cdn = $profile['cdn'] ?? [];
+		if (!is_array($cdn)) {
+			$this->_configError('Invalid cdn configuration in the profile');
+		}
+
+		return [
+			'target' => [
+				'type' => $this->_configString($target, 'type', 'target type'),
+				'host' => $this->_configString($target, 'host', 'target host'),
+				'port' => $this->_configOptionalInt($target, 'port', 'target port'),
+				'login' => $this->_configString($target, 'login', 'target login'),
+				'password' => $this->_configOptionalString($target, 'password', 'target password'),
+				'path' => $target['path'],
+				'privatekey' => $this->_configOptionalString($target, 'privatekey', 'target privatekey'),
+				'local_path' => $this->_configOptionalString($target, 'local_path', 'target local_path'),
+				'jump' => $jump,
+			],
+			'excludes' => $this->_configStringList($profile, 'excludes', 'excludes') ?? [],
+			'permissions' => $this->_configStringMap($profile, 'permissions', 'permissions'),
+			'cdn' => [
+				'flushlist' => $this->_configStringList($cdn, 'flushlist', 'cdn flushlist'),
+				'pathreplace' => $this->_configStringMap($cdn, 'pathreplace', 'cdn pathreplace'),
+			],
+		];
+	}
+
+	/**
+	 * @param array<mixed> $config
+	 * @param string $key
+	 * @param string $name
+	 * @return string
+	 */
+	protected function _configString(array $config, string $key, string $name): string {
+		$value = $this->_configOptionalString($config, $key, $name);
+		if ($value === null) {
+			$this->_configError('Missing '.$name.' in the profile');
+		}
+
+		return $value;
+	}
+
+	/**
+	 * @param array<mixed> $config
+	 * @param string $key
+	 * @param string $name
+	 * @return string|null null if not set or empty
+	 */
+	protected function _configOptionalString(array $config, string $key, string $name): ?string {
+		if (!isset($config[$key]) || $config[$key] === '') {
+			return null;
+		}
+		if (!is_string($config[$key])) {
+			$this->_configError('Invalid '.$name.' in the profile, a string is expected');
+		}
+
+		return $config[$key];
+	}
+
+	/**
+	 * @param array<mixed> $config
+	 * @param string $key
+	 * @param string $name
+	 * @return int|null null if not set or empty
+	 */
+	protected function _configOptionalInt(array $config, string $key, string $name): ?int {
+		if (!isset($config[$key]) || $config[$key] === '') {
+			return null;
+		}
+		if (is_int($config[$key])) {
+			return $config[$key];
+		}
+		if (is_string($config[$key]) && ctype_digit($config[$key])) {
+			return (int) $config[$key];
+		}
+
+		$this->_configError('Invalid '.$name.' in the profile, a number is expected');
+	}
+
+	/**
+	 * @param array<mixed> $config
+	 * @param string $key
+	 * @param string $name
+	 * @return list<string>|null null if not set
+	 */
+	protected function _configStringList(array $config, string $key, string $name): ?array {
+		if (!isset($config[$key])) {
+			return null;
+		}
+
+		$list = [];
+		if (is_array($config[$key])) {
+			foreach ($config[$key] as $value) {
+				if (!is_string($value)) {
+					$this->_configError('Invalid '.$name.' in the profile, a list of strings is expected');
+				}
+				$list[] = $value;
+			}
+
+			return $list;
+		}
+
+		$this->_configError('Invalid '.$name.' in the profile, a list of strings is expected');
+	}
+
+	/**
+	 * @param array<mixed> $config
+	 * @param string $key
+	 * @param string $name
+	 * @return array<string, string> empty if not set
+	 */
+	protected function _configStringMap(array $config, string $key, string $name): array {
+		if (!isset($config[$key])) {
+			return [];
+		}
+
+		$map = [];
+		if (is_array($config[$key])) {
+			foreach ($config[$key] as $mapKey => $value) {
+				if (!is_string($value)) {
+					$this->_configError('Invalid '.$name.' in the profile, string values are expected');
+				}
+				$map[(string) $mapKey] = $value;
+			}
+
+			return $map;
+		}
+
+		$this->_configError('Invalid '.$name.' in the profile, an object is expected');
+	}
+
+	/**
+	 * Logs a configuration error and stops
+	 *
+	 * @param string $message
+	 * @return never
+	 */
+	protected function _configError(string $message): never {
+		$this->e($message);
+		throw new \Exception('', 1);
+	}
+
+	/**
 	 * Connecting to target
 	 *
 	 * @return void
 	 */
-	public function prepareTarget() {
-		if (!isset($this->profile['target']) || empty($this->profile['target'])) {
-			$this->e('Target configuration not found on the profile');
-			throw new \Exception('', 1);
-		}
-		
-		if (empty($this->profile['target']['path'])) {
-			$this->e('Target path must not be empty : use "." for root folder or specify a remote folder');
-			throw new \Exception('', 1);
-		}
-		
+	public function prepareTarget(): void {
 		$this->rrevfile = $this->profile['target']['path'].'/'.'rev';
 		$this->lrevfile = sys_get_temp_dir().'/pushftp-'.hash('sha256', $this->profileName.'-'.$this->profile['target']['host'].'-'.time()).'-rev';
 		
@@ -203,15 +383,12 @@ class PushFTP
 			throw new \Exception('', 1);
 		}
 
-		if (!empty($this->profile['target']['jump'])) {
+		if ($this->profile['target']['jump'] !== null) {
 			$jump = $this->profile['target']['jump'];
 
-			if ($this->profile['target']['type'] != 'sftp') {
+			$target = $this->target;
+			if (!$target instanceof Sftp) {
 				$this->e('A jump host can only be used with an sftp target');
-				throw new \Exception('', 1);
-			}
-			if (empty($jump['host'])) {
-				$this->e('No host defined for the jump');
 				throw new \Exception('', 1);
 			}
 
@@ -235,34 +412,38 @@ class PushFTP
 			}
 
 			$this->e('Using jump host '.(!empty($jump['login']) ? $jump['login'].'@' : '').$jump['host'].(!empty($jump['port']) ? ':'.$jump['port'] : ''));
-			$this->target->setJump($jump);
+			$target->setJump($jump);
 		}
 
 		$this->e('Connecting to target '.$this->profile['target']['type'].' '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
 		try {
-			$r = $this->target->connect();
+			$this->target->connect();
 		} catch (\Exception $e) {
 			$this->e('Could not connect to target '.$this->profile['target']['type'].': '.$this->profile['target']['host'].':'.$this->profile['target']['port'].' ('.$e->getMessage().')');
 			throw new \Exception('', 1);
 		}
-		if ($this->target->isError($r)) {
-			$this->e('Could not connect to target '.$this->profile['target']['type'].': '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
-			throw new \Exception('', 1);
+
+		$password = $this->profile['target']['password'] ?? '';
+		if ($this->key !== null && $password !== '') {
+			$password = $this->_decryptPassword($password);
 		}
 
-		$password = $this->profile['target']['password'];
-		if ($this->key !== null) {
-			$password = $this->_decryptPassword($this->profile['target']['password']);
-		}
+		if ($this->profile['target']['privatekey'] !== null) {
+			$keyfile = $this->lpath.'/'.$this->profile['target']['privatekey'];
+			$keydata = is_readable($keyfile) ? file_get_contents($keyfile) : false;
+			if ($keydata === false) {
+				$this->e('Could not read private key '.$keyfile);
+				throw new \Exception('', 1);
+			}
 
-		if (!empty($this->profile['target']['privatekey'])) {
 			try {
-				$key = \phpseclib3\Crypt\PublicKeyLoader::load(
-					file_get_contents($this->lpath.'/'.$this->profile['target']['privatekey']),
-					$password
-				);
+				$key = \phpseclib3\Crypt\PublicKeyLoader::load($keydata, $password);
 			} catch (\Exception $e) {
 				$this->e('Could not load private key: '.$e->getMessage());
+				throw new \Exception('', 1);
+			}
+			if (!$key instanceof \phpseclib3\Crypt\Common\PrivateKey) {
+				$this->e('Key '.$keyfile.' is not a private key');
 				throw new \Exception('', 1);
 			}
 			$password = $key;
@@ -286,7 +467,7 @@ class PushFTP
 	 *
 	 * @return void
 	 **/
-	public function parseLocalRevision() {
+	public function parseLocalRevision(): void {
 		$this->e('Getting local version');
 		
 		try {
@@ -303,7 +484,7 @@ class PushFTP
 	 *
 	 * @return void
 	 **/
-	public function parseTargetRevision() {
+	public function parseTargetRevision(): void {
 		$this->e('Getting target version');
 		
 		// Cleanup
@@ -331,8 +512,8 @@ class PushFTP
 			}
 		} else {
 			// Rev file found, getting the revision
-			$revdata = trim(file_get_contents($this->lrevfile));
-			$this->rev = trim($revdata);
+			$revdata = file_get_contents($this->lrevfile);
+			$this->rev = trim(($revdata === false) ? '' : $revdata);
 			
 			// Cleanup
 			unlink($this->lrevfile);
@@ -353,7 +534,7 @@ class PushFTP
 	 *
 	 * @return void
 	 **/
-	public function parseChanges() {
+	public function parseChanges(): void {
 		$this->e('Getting SCM changes between '.$this->rev.' and '.$this->newrev);
 		
 		// Getting changes from SCM
@@ -364,7 +545,7 @@ class PushFTP
 		}
 
 		// Parsing changes
-		$this->scm_changes = array_map(array($this->scm, 'parseChanges'), $output);
+		$this->scm_changes = array_map([$this->scm, 'parseChanges'], $output);
 
 		// Dumping changes list
 		file_put_contents($this->scmchangesfile, '');
@@ -373,10 +554,11 @@ class PushFTP
 		}
 
 		// Dumping diff
-		$this->scm->dumpDiff($this->rev, $this->newrev, getcwd().'/'.$this->scmdifffile);
+		$cwd = getcwd();
+		$this->scm->dumpDiff($this->rev, $this->newrev, $cwd.'/'.$this->scmdifffile);
 
 		// Dumping log
-		$this->scm->dumpLog($this->rev, $this->newrev, getcwd().'/'.$this->scmlogfile);
+		$this->scm->dumpLog($this->rev, $this->newrev, $cwd.'/'.$this->scmlogfile);
 
 		// Checking changes
 		if (empty($this->scm_changes)) {
@@ -397,7 +579,7 @@ class PushFTP
 	 *
 	 * @return void
 	 **/
-	public function pushChanges() {
+	public function pushChanges(): void {
 		$this->_prepareChanges();
 		$this->_applyChanges();
 	}
@@ -407,7 +589,7 @@ class PushFTP
 	 *
 	 * @return void
 	 */
-	public function rollbackChanges() {
+	public function rollbackChanges(): void {
 		$this->e('Rolling back changes');
 		
 		// TODO: implement rollback
@@ -423,7 +605,7 @@ class PushFTP
 	 *
 	 * @return void
 	 */
-	protected function _prepareChanges() {
+	protected function _prepareChanges(): void {
 		$this->e('Preparing changes on the target');
 		
 		$rpath = $this->profile['target']['path'];
@@ -431,8 +613,8 @@ class PushFTP
 		$this->_makeTmpDir($rpath);
 		
 		$self = $this;
-		$this->_processChanges($rpath, array(
-			'M' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($self) {
+		$this->_processChanges($rpath, [
+			'M' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use ($self): void {
 				$rtmpfile = $self->_getTmpFileName($rpath, $file);
 				$self->e('Preparing '.$lfileh.' at '.$rtmpfile);
 				if ($self->go === true) {
@@ -445,7 +627,7 @@ class PushFTP
 				
 				// TODO: copy file that will be replace to a tmp dir in case of rollback
 			},
-			'A' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($self) {
+			'A' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use ($self): void {
 				// Directories are created when applying changes
 				if (!is_dir($lfile)) {
 					$rtmpfile = $self->_getTmpFileName($rpath, $file);
@@ -459,12 +641,12 @@ class PushFTP
 					}
 				}
 			},
-			'D' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($self) {
+			'D' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile): void {
 				// Nothing to do
 				
 				// TODO: copy file that will be deleted to a tmp dir in case of rollback
 			}
-		));
+		]);
 	}
 
 	/**
@@ -472,15 +654,15 @@ class PushFTP
 	 *
 	 * @return void
 	 */
-	protected function _applyChanges() {
+	protected function _applyChanges(): void {
 		$this->e('Applying changes on the target');
 		
 		$rpath = $this->profile['target']['path'];
 		$rtmppath = $this->_getTmpDirName($rpath);
 		
 		$self = $this;
-		$this->_processChanges($rpath, array(
-			'M' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($rtmppath, $self) {
+		$this->_processChanges($rpath, [
+			'M' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use ($rtmppath, $self): void {
 				// TODO: check if directory exists ?
 				
 				$self->e('Commiting '.$lfileh.' to '.$rfile);
@@ -493,7 +675,7 @@ class PushFTP
 					}
 				}
 			},
-			'A' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($rtmppath, $self) {
+			'A' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use ($rtmppath, $self): void {
 				if (is_dir($lfile)) {
 					$r = $self->_directoryExists($rfile);
 					if (!$r) {
@@ -531,7 +713,7 @@ class PushFTP
 					}
 				}
 			},
-			'D' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($rtmppath, $self) {
+			'D' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use ($self): void {
 				$self->e('Deleting '.$rfile);
 				if ($self->go === true) {
 					$r = $self->target->rm($rfile, true);
@@ -545,7 +727,7 @@ class PushFTP
 					}
 				}
 			}
-		));
+		]);
 		
 		//
 		
@@ -556,10 +738,10 @@ class PushFTP
 	 * Generic changes processor
 	 *
 	 * @param string $rpath 
-	 * @param array $handlers array containing handlers for each type of change
+	 * @param array<string, Handler> $handlers handlers for each type of change
 	 * @return void
 	 */
-	protected function _processChanges($rpath, $handlers = array()) {
+	protected function _processChanges(string $rpath, array $handlers = []): void {
 		foreach ($this->scm_changes as $value) {
 			$file = $value['file'];
 			$lfile = $this->lpath.'/'.$file;
@@ -601,9 +783,9 @@ class PushFTP
 	 * Remote temporary directory name
 	 *
 	 * @param string $rpath 
-	 * @return void
+	 * @return string
 	 */
-	protected function _getTmpDirName($rpath) {
+	protected function _getTmpDirName(string $rpath): string {
 		$rpath .= '/'.$this->tmpDir;
 
 		return $rpath;
@@ -617,7 +799,7 @@ class PushFTP
 	 * @param string $file
 	 * @return string
 	 */
-	public function _getTmpFileName($rtmppath, $file) {
+	public function _getTmpFileName(string $rtmppath, string $file): string {
 		return $rtmppath.'/'.hash('sha256', $file);
 	}
 
@@ -627,7 +809,7 @@ class PushFTP
 	 * @param string $rtmppath 
 	 * @return void
 	 */
-	protected function _makeTmpDir($rtmppath) {
+	protected function _makeTmpDir(string $rtmppath): void {
 		if ($this->go === true) {
 			$this->e('Preparing temporary directory '.$rtmppath);
 			$pwd = $this->target->pwd();
@@ -635,7 +817,9 @@ class PushFTP
 			$r = $this->target->cd($rtmppath);
 			if (!$this->target->isError($r)) {
 				// If cd was successful, going back to where we were
-				$r = $this->target->cd($pwd);
+				if ($pwd !== false) {
+					$this->target->cd($pwd);
+				}
 				
 				// Deleting tmp dir
 				$this->e('Found an existing temporary directory on the remote server, deleting it');
@@ -661,7 +845,7 @@ class PushFTP
 	 * @param string $rtmppath 
 	 * @return void
 	 */
-	protected function _cleanupTmpDir($rtmppath) {
+	protected function _cleanupTmpDir(string $rtmppath): void {
 		if ($this->go === true) {
 			$this->e('Cleaning up temporary directory '.$rtmppath);
 			
@@ -677,9 +861,9 @@ class PushFTP
 	 * note: must be public because it is used through $self
 	 *
 	 * @param string $rdir 
-	 * @return void
+	 * @return bool
 	 */
-	public function _directoryExists($rdir) {
+	public function _directoryExists(string $rdir): bool {
 		$directoryExists = false;
 		
 		// Checking if directory exists by trying to cd into it
@@ -691,7 +875,9 @@ class PushFTP
 			$directoryExists = true;
 			
 			// If cd was successful, going back to where we were
-			$r = $this->target->cd($pwd);
+			if ($pwd !== false) {
+				$this->target->cd($pwd);
+			}
 		}
 
 		return $directoryExists;
@@ -702,10 +888,10 @@ class PushFTP
 	 *
 	 * @return void
 	 */
-	public function checkPermissions() {
+	public function checkPermissions(): void {
 		$this->e('Checking permissions');
 		
-		if (!isset($this->profile['permissions']) || empty($this->profile['permissions'])) {
+		if (empty($this->profile['permissions'])) {
 			$this->e('No permissions associated to this profile');
 			return;
 		}
@@ -713,20 +899,20 @@ class PushFTP
 		$rpath = $this->profile['target']['path'];
 		
 		$self = $this;
-		$this->_processChanges($rpath, array(
-			'M' => function($rpath, $file, $lfile, $lfileh, $rfile) use (&$flushlist, $self) {
+		$this->_processChanges($rpath, [
+			'M' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use ($self): void {
 				$permissions = $self->_checkPermissions($file, $lfile, $lfileh);
 				if ($permissions !== false) {
 					$self->_updatePermissions($self, $rpath, $file, $lfile, $lfileh, $rfile, $permissions);
 				}
 			},
-			'A' => function($rpath, $file, $lfile, $lfileh, $rfile) use (&$flushlist, $self) {
+			'A' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use ($self): void {
 				$permissions = $self->_checkPermissions($file, $lfile, $lfileh);
 				if ($permissions !== false) {
 					$self->_updatePermissions($self, $rpath, $file, $lfile, $lfileh, $rfile, $permissions);
 				}
 			}
-		));
+		]);
 	}
 
 	/**
@@ -734,13 +920,11 @@ class PushFTP
 	 * note: must be public because it is used through $self
 	 *
 	 * @param string $file 
-	 * @return int new permissions to apply, of false
+	 * @param string $lfile 
+	 * @param string $lfileh 
+	 * @return string|false new permissions to apply, or false
 	 */
-	public function _checkPermissions($file, $lfile, $lfileh) {
-		if (!isset($this->profile['permissions']) || empty($this->profile['permissions'])) {
-			return false;
-		}
-		
+	public function _checkPermissions(string $file, string $lfile, string $lfileh): string|false {		
 		foreach ($this->profile['permissions'] as $pattern => $permissions) {
 			$r = fnmatch($pattern, $file);
 			if ($r) {
@@ -773,15 +957,20 @@ class PushFTP
 	 * Updating permissions on a file/folder
 	 * note: must be public because it is used through $self
 	 *
+	 * @param PushFTP $self 
+	 * @param string $rpath 
 	 * @param string $file 
-	 * @param int new permissions to apply, of false
+	 * @param string $lfile 
+	 * @param string $lfileh 
+	 * @param string $rfile 
+	 * @param string $permissions new permissions to apply
 	 * @return void
 	 */
-	public function _updatePermissions($self, $rpath, $file, $lfile, $lfileh, $rfile, $permissions) {
+	public function _updatePermissions(PushFTP $self, string $rpath, string $file, string $lfile, string $lfileh, string $rfile, string $permissions): void {
 		if (is_dir($lfile)) {
 			$self->e('Updating permissions on directory '.$rfile.' to '.$permissions);
 			if ($self->go === true) {
-				$r = $self->target->chmod($rfile, octdec($permissions));
+				$r = $self->target->chmod($rfile, (int) octdec($permissions));
 				if ($self->target->isError($r)) {
 					$self->e('Could not perform operation, stopping.');
 					throw new \Exception('', 1);
@@ -791,7 +980,7 @@ class PushFTP
 		else {
 			$self->e('Updating permissions on file '.$rfile.' to '.$permissions);
 			if ($self->go === true) {
-				$r = $self->target->chmod($rfile, octdec($permissions));
+				$r = $self->target->chmod($rfile, (int) octdec($permissions));
 				if ($self->target->isError($r)) {
 					$self->e('Could not perform operation, stopping.');
 					throw new \Exception('', 1);
@@ -805,25 +994,25 @@ class PushFTP
 	 *
 	 * @return void
 	 */
-	public function makeCdnFlushList() {
+	public function makeCdnFlushList(): void {
 		$this->e('Making CDN flush list');
 		
-		if (!isset($this->profile['cdn']['flushlist'])) {
+		if ($this->profile['cdn']['flushlist'] === null) {
 			$this->e('Couldn\'t make CDN flush list since no rules have been defined for this profile');
 			return;
 		}
 		
 		$rpath = $this->profile['target']['path'];
-		$flushlist = array();
+		$flushlist = [];
 		
 		$self = $this;
-		$this->_processChanges($rpath, array(
-			'M' => function($rpath, $file, $lfile, $lfileh, $rfile) use (&$flushlist, $self) {
+		$this->_processChanges($rpath, [
+			'M' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use (&$flushlist, $self): void {
 				if ($self->_shouldCdnFlush($file)) {
 					$flushlist[] = $file;
 				}
 			},
-			'A' => function($rpath, $file, $lfile, $lfileh, $rfile) use (&$flushlist, $self) {
+			'A' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use (&$flushlist, $self): void {
 				if (is_dir($lfile)) {
 					// do nothing
 				}
@@ -833,20 +1022,18 @@ class PushFTP
 					}
 				}
 			},
-			'D' => function($rpath, $file, $lfile, $lfileh, $rfile) use (&$flushlist, $self) {
+			'D' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use (&$flushlist, $self): void {
 				// NB: no specific check on directories since all files inside will be listed as 'D' by SCM
 				if ($self->_shouldCdnFlush($file)) {
 					$flushlist[] = $file;
 				}
 			}
-		));
+		]);
 
 		file_put_contents($this->flushlistfile, '');
 		foreach ($flushlist as $flushitem) {
-			if (isset($this->profile['cdn']['pathreplace'])) {
-				foreach ($this->profile['cdn']['pathreplace'] as $search => $replace) {
-					$flushitem = str_replace($search, $replace, $flushitem);
-				}
+			foreach ($this->profile['cdn']['pathreplace'] as $search => $replace) {
+				$flushitem = str_replace($search, $replace, $flushitem);
 			}
 			$this->e($flushitem);
 			file_put_contents($this->flushlistfile, $flushitem."\n", FILE_APPEND);
@@ -860,10 +1047,10 @@ class PushFTP
 	 * note: must be public because it is used through $self
 	 *
 	 * @param string $file 
-	 * @return boolean
+	 * @return bool
 	 */
-	public function _shouldCdnFlush($file) {
-		if (!isset($this->profile['cdn']['flushlist'])) {
+	public function _shouldCdnFlush(string $file): bool {
+		if ($this->profile['cdn']['flushlist'] === null) {
 			return false;
 		}
 		
@@ -884,7 +1071,7 @@ class PushFTP
 	 *
 	 * @return void
 	 **/
-	public function updateRemoteRevision() {
+	public function updateRemoteRevision(): void {
 		if ($this->go === true) {
 			$this->e('Updating target rev');
 			file_put_contents($this->lrevfile, $this->newrev);
@@ -900,9 +1087,14 @@ class PushFTP
 	/**
 	 * Decrypts password
 	 *
+	 * @param string $encryptedPassword
 	 * @return string
 	 **/
-	protected function _decryptPassword($encryptedPassword) {
+	protected function _decryptPassword(string $encryptedPassword): string {
+		if ($this->key === null) {
+			return $encryptedPassword;
+		}
+
 		try {
 			return \PushFTP\Crypt::decrypt($encryptedPassword, $this->key);
 		} catch (\Exception $e) {
@@ -919,7 +1111,7 @@ class PushFTP
 	 * @param string $str 
 	 * @return void
 	 */
-	public function e($str) {
+	public function e(string $str): void {
 		echo $str.PHP_EOL;
 		
 		file_put_contents($this->logfile, $str."\n", FILE_APPEND);

@@ -4,17 +4,17 @@ namespace PushFTP\SCM;
 
 abstract class AbstractSCM implements SCMInterface
 {
-	protected $root_path;
+	protected string $root_path;
 
-	static public function detect($root_path)
+	static public function detect(string $root_path): bool
 	{
 		return static::_detect($root_path);
 	}
-	abstract static protected function _detect($root_path);
+	abstract static protected function _detect(string $root_path): bool;
 
-	public function __construct($root_path)
+	public function __construct(string $root_path)
 	{
-		if (!$root_path || empty($root_path)) {
+		if ($root_path === '') {
 			throw new \Exception('No root path defined');
 		}
 
@@ -22,47 +22,59 @@ abstract class AbstractSCM implements SCMInterface
 
 		$this->___construct($root_path);
 	}
-	abstract protected function ___construct($root_path);
+	abstract protected function ___construct(string $root_path): void;
 
 
-	public function getInitialVersion()
+	public function getInitialVersion(): string
 	{
 		return $this->_getInitialVersion();
 	}
-	abstract protected function _getInitialVersion();
+	abstract protected function _getInitialVersion(): string;
 
 
-	public function getCurrentVersion()
+	public function getCurrentVersion(): string
 	{
 		return $this->_getCurrentVersion();
 	}
-	abstract protected function _getCurrentVersion();
+	abstract protected function _getCurrentVersion(): string;
 
 
-	public function getChanges($rev, $newrev)
+	/**
+	 * @return list<string>|false
+	 */
+	public function getChanges(string $rev, string $newrev): array|false
 	{
 		return $this->_getChanges($rev, $newrev);
 	}
-	abstract protected function _getChanges($rev, $newrev);
+	/**
+	 * @return list<string>|false
+	 */
+	abstract protected function _getChanges(string $rev, string $newrev): array|false;
 
 
-	public function parseChanges($v)
+	/**
+	 * @return array{status: string, file: string}
+	 */
+	public function parseChanges(string $v): array
 	{
 		return $this->_parseChanges($v);
 	}
-	abstract protected function _parseChanges($v);
+	/**
+	 * @return array{status: string, file: string}
+	 */
+	abstract protected function _parseChanges(string $v): array;
 
 
-	public function dumpDiff($rev, $newrev, $difffile)
+	public function dumpDiff(string $rev, string $newrev, string $difffile): bool
 	{
 		return $this->_dumpDiff($rev, $newrev, $difffile);
 	}
-	abstract protected function _dumpDiff($rev, $newrev, $difffile);
+	abstract protected function _dumpDiff(string $rev, string $newrev, string $difffile): bool;
 
 
-	public function dumpLog($rev, $newrev, $logfile)
+	public function dumpLog(string $rev, string $newrev, string $logfile): bool
 	{
 		return $this->_dumpLog($rev, $newrev, $logfile);
 	}
-	abstract protected function _dumpLog($rev, $newrev, $logfile);
+	abstract protected function _dumpLog(string $rev, string $newrev, string $logfile): bool;
 }

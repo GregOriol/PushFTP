@@ -11,9 +11,9 @@
 			},
 			"excludes": [
 				"pushftp.json",
-				"scripts/pushftp.phar"
+				"scripts/pushftp.phar",
 				"sql",
-				"sql/*"
+				"sql/*",
 				"**/test.txt"
 			],
 			"permissions": {

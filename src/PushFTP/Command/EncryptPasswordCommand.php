@@ -21,7 +21,7 @@ class EncryptPasswordCommand extends AbstractCommand
 	protected function execute(InputInterface $input, OutputInterface $output): int
 	{
 		$password = $input->getOption('password');
-		if ($password === null || $password === '') {
+		if (!is_string($password) || $password === '') {
 			$password = $this->askHidden($input, $output, 'Password to encrypt: ');
 		}
 

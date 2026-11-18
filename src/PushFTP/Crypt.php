@@ -11,7 +11,7 @@ class Crypt
 	 * @param string $key
 	 * @return string
 	 */
-	public static function encrypt($password, $key)
+	public static function encrypt(string $password, string $key): string
 	{
 		self::checkSodium();
 
@@ -32,7 +32,7 @@ class Crypt
 	 * @param string $key
 	 * @return string
 	 */
-	public static function decrypt($encrypted, $key)
+	public static function decrypt(string $encrypted, string $key): string
 	{
 		self::checkSodium();
 
@@ -63,7 +63,7 @@ class Crypt
 	 * @param string $salt
 	 * @return string
 	 */
-	protected static function deriveKey($key, $salt)
+	protected static function deriveKey(string $key, string $salt): string
 	{
 		return sodium_crypto_pwhash(
 			SODIUM_CRYPTO_SECRETBOX_KEYBYTES,
@@ -78,7 +78,7 @@ class Crypt
 	/**
 	 * @return void
 	 */
-	protected static function checkSodium()
+	protected static function checkSodium(): void
 	{
 		if (!extension_loaded('sodium')) {
 			throw new \Exception('PHP sodium extension is required for encrypted passwords');

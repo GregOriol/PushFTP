@@ -4,7 +4,7 @@ namespace PushFTP\Target;
 
 class Factory
 {
-	public static function create($type, $host, $port_number = false)
+	public static function create(string $type, string $host, ?int $port_number = null): TargetInterface
 	{
 		switch($type) {
 			case 'sftp':

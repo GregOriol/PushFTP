@@ -26,15 +26,18 @@ class PushCommand extends AbstractCommand
 
 	protected function execute(InputInterface $input, OutputInterface $output): int
 	{
-		$options = array(
-			'path'			=> $input->getArgument('path'),
-			'profile'		=> $input->getOption('profile'),
-			'go'			=> $input->getOption('go'),
-			'lenient'		=> $input->getOption('lenient'),
-			'nfonc'			=> $input->getOption('nfonc'),
-			'cdnflushlist'	=> $input->getOption('cdnflushlist'),
+		$path = $input->getArgument('path');
+		$profile = $input->getOption('profile');
+
+		$options = [
+			'path'			=> is_string($path) ? $path : '',
+			'profile'		=> is_string($profile) ? $profile : null,
+			'go'			=> $input->getOption('go') === true,
+			'lenient'		=> $input->getOption('lenient') === true,
+			'nfonc'			=> $input->getOption('nfonc') === true,
+			'cdnflushlist'	=> $input->getOption('cdnflushlist') === true,
 			'key'			=> $this->getKey($input, $output),
-		);
+		];
 
 		try {
 			$pushftp = new PushFTP();

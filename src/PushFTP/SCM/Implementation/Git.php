@@ -4,19 +4,19 @@ namespace PushFTP\SCM\Implementation;
 
 class Git extends \PushFTP\SCM\AbstractSCM
 {
-	static protected function _detect($root_path)
+	static protected function _detect(string $root_path): bool
 	{
 		exec('cd '.escapeshellarg($root_path).' && git rev-parse --show-toplevel 2>&1', $output, $return_var);
 		return ($return_var == 0);
 	}
 
-	protected function ___construct($root_path)
+	protected function ___construct(string $root_path): void
 	{
 	}
 
-	protected function _getInitialVersion()
+	protected function _getInitialVersion(): string
 	{
-		$version = exec('cd '.escapeshellarg($this->root_path).' && git rev-list --max-parents=0 HEAD');
+		$version = $this->_execLine('cd '.escapeshellarg($this->root_path).' && git rev-list --max-parents=0 HEAD');
 
 		// Checking if version is a hash
 		$return_var = preg_match('/^[0-9a-f]{40}$/i', $version);
@@ -28,9 +28,9 @@ class Git extends \PushFTP\SCM\AbstractSCM
 		return $this->getTagOrBranchForCommit($version).'@'.$version;
 	}
 
-	protected function _getCurrentVersion()
+	protected function _getCurrentVersion(): string
 	{
-		$version = exec('cd '.escapeshellarg($this->root_path).' && git rev-parse HEAD');
+		$version = $this->_execLine('cd '.escapeshellarg($this->root_path).' && git rev-parse HEAD');
 
 		// Checking if version is a hash
 		$return_var = preg_match('/^[0-9a-f]{40}$/i', $version);
@@ -49,7 +49,10 @@ class Git extends \PushFTP\SCM\AbstractSCM
 		return $this->getTagOrBranchForCommit($version).'@'.$version;
 	}
 
-	protected function _getChanges($rev, $newrev)
+	/**
+	 * @return list<string>|false
+	 */
+	protected function _getChanges(string $rev, string $newrev): array|false
 	{
 		$rev = substr($rev, strpos($rev, '@')+1);
 		$newrev = substr($newrev, strpos($newrev, '@')+1);
@@ -62,23 +65,24 @@ class Git extends \PushFTP\SCM\AbstractSCM
 		return $output;
 	}
 
-	protected function _parseChanges($v)
+	/**
+	 * @return array{status: string, file: string}
+	 */
+	protected function _parseChanges(string $v): array
 	{
 		$arr = explode("\t", $v, 2);
 
 		if (count($arr) != 2) {
-			$arr = array();
-			$arr[0] = '???';
-			$arr[1] = '';
+			$arr = ['???', ''];
 		}
 
-		return array(
+		return [
 			'status' => $arr[0],
 			'file' => $arr[1]
-		);
+		];
 	}
 
-	protected function _dumpDiff($rev, $newrev, $difffile)
+	protected function _dumpDiff(string $rev, string $newrev, string $difffile): bool
 	{
 		$rev = substr($rev, strpos($rev, '@')+1);
 		$newrev = substr($newrev, strpos($newrev, '@')+1);
@@ -88,7 +92,7 @@ class Git extends \PushFTP\SCM\AbstractSCM
 		return ($return_var == 0);
 	}
 
-	protected function _dumpLog($rev, $newrev, $logfile)
+	protected function _dumpLog(string $rev, string $newrev, string $logfile): bool
 	{
 		$rev = substr($rev, strpos($rev, '@')+1);
 		$newrev = substr($newrev, strpos($newrev, '@')+1);
@@ -99,10 +103,10 @@ class Git extends \PushFTP\SCM\AbstractSCM
 	}
 
 
-	private function getTagOrBranchForCommit($commithash)
+	private function getTagOrBranchForCommit(string $commithash): string
 	{
 		// Checking if the commit belongs to a tag
-		$tag = exec('cd '.escapeshellarg($this->root_path).' && git tag --points-at '.escapeshellarg($commithash).' --no-column');
+		$tag = $this->_execLine('cd '.escapeshellarg($this->root_path).' && git tag --points-at '.escapeshellarg($commithash).' --no-column');
 		$tag = trim($tag);
 
 		if (!empty($tag)) {
@@ -110,7 +114,7 @@ class Git extends \PushFTP\SCM\AbstractSCM
 		}
 
 		// Checking if the commit belongs to a remote branch
-		$branch = exec('cd '.escapeshellarg($this->root_path).' && git branch --remotes --contains '.escapeshellarg($commithash).' --no-color --no-column');
+		$branch = $this->_execLine('cd '.escapeshellarg($this->root_path).' && git branch --remotes --contains '.escapeshellarg($commithash).' --no-color --no-column');
 		$branch = trim($branch);
 
 		if (!empty($branch)) {
@@ -118,7 +122,7 @@ class Git extends \PushFTP\SCM\AbstractSCM
 		}
 
 		// Checking if the commit belongs to a local branch
-		$branch = exec('cd '.escapeshellarg($this->root_path).' && git branch --contains '.escapeshellarg($commithash).' --no-color --no-column');
+		$branch = $this->_execLine('cd '.escapeshellarg($this->root_path).' && git branch --contains '.escapeshellarg($commithash).' --no-color --no-column');
 		$branch = str_replace('* ', '', $branch);
 		$branch = trim($branch);
 
@@ -127,5 +131,18 @@ class Git extends \PushFTP\SCM\AbstractSCM
 		}
 
 		return 'HEAD';
+	}
+
+	/**
+	 * Executes a command and returns its last output line
+	 *
+	 * @param string $command
+	 * @return string empty on failure
+	 */
+	private function _execLine(string $command): string
+	{
+		$line = exec($command);
+
+		return ($line === false) ? '' : $line;
 	}
 }

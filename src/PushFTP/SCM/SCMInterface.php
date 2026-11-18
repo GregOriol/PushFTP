@@ -4,16 +4,23 @@ namespace PushFTP\SCM;
 
 interface SCMInterface
 {
-	static public function detect($root_path);
+	static public function detect(string $root_path): bool;
 	
-	public function __construct($root_path);
+	public function __construct(string $root_path);
 
-	public function getInitialVersion();
-	public function getCurrentVersion();
+	public function getInitialVersion(): string;
+	public function getCurrentVersion(): string;
 
-	public function getChanges($rev, $newrev);
-	public function parseChanges($v);
+	/**
+	 * @return list<string>|false
+	 */
+	public function getChanges(string $rev, string $newrev): array|false;
+
+	/**
+	 * @return array{status: string, file: string}
+	 */
+	public function parseChanges(string $v): array;
 	
-	public function dumpDiff($rev, $newrev, $difffile);
-	public function dumpLog($rev, $newrev, $logfile);
+	public function dumpDiff(string $rev, string $newrev, string $difffile): bool;
+	public function dumpLog(string $rev, string $newrev, string $logfile): bool;
 }
