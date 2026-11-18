@@ -4,7 +4,7 @@
  * This script will check for SCM changes and update a target
  * 
  * Based on :
- *  - Console_CommandLine : http://pear.php.net/manual/en/package.console.console-commandline.php
+ *  - Symfony Console : https://symfony.com/doc/current/components/console.html
  *  - phpseclib : http://phpseclib.sourceforge.net
  */
 
@@ -33,19 +33,9 @@ require_once('vendor/autoload.php');
 /**
  * Main
  */
-use \PushFTP\PushFTP;
+use \Symfony\Component\Console\Application;
 
-try {
-	$pushftp = new PushFTP();
-	$pushftp->run();
-} catch (Exception $e) {
-	$ecode = $e->getCode();
-	if ($ecode == 1) {
-		exit(1);
-	} elseif ($ecode == 0 && $e->getMessage() === '') {
-		exit(0);
-	} else {
-		echo 'Unexpected error: '.$e->getMessage()."\n";
-		exit(1);
-	}
-}
+$application = new Application('PushFTP', PUSHFTP_VERSION);
+$application->addCommand(new \PushFTP\Command\PushCommand());
+$application->addCommand(new \PushFTP\Command\EncryptPasswordCommand());
+$application->run();

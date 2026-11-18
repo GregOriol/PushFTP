@@ -29,15 +29,15 @@ ssh-keyscan -p 22 bastion.example.com > bastion.known_hosts
 ```
 
 ## Usage
-	php build/pushftp.phar --help
+	php build/pushftp.phar push --profile=preprod ./project
+	php build/pushftp.phar push --help
 
-## Tools
-### Encrypt password
-A helper tool is provided to encrypt passwords (Argon2id + XSalsa20-Poly1305, requires the PHP sodium extension)
+## Encrypt password
+Passwords can be encrypted (Argon2id + XSalsa20-Poly1305, requires the PHP sodium extension)
 
-	php encryptPassword.php --help
+	php build/pushftp.phar encrypt-password
 
-The key is given with `--key=...`, or prompted with `--key` alone as last argument, or read from the `PUSHFTP_KEY` environment variable. The same applies to pushftp to decrypt the passwords.
+The password and key are prompted when not given with `--password=...` and `--key=...`. The key can also be read from the `PUSHFTP_KEY` environment variable. The same applies to `push` to decrypt the passwords, where `--key` alone prompts for it.
 
 Passwords encrypted with versions before 0.9 (AES) must be encrypted again.
 
@@ -50,5 +50,5 @@ Type a password
 
 Encrypt the password
 ```
-php encryptPassword.php --password --key
+php build/pushftp.phar encrypt-password
 ```

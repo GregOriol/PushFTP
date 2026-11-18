@@ -57,21 +57,6 @@ class Crypt
 	}
 
 	/**
-	 * Gets the key from the given value, or from the PUSHFTP_KEY environment variable
-	 *
-	 * @param string|null $key
-	 * @return string|null
-	 */
-	public static function getKey($key)
-	{
-		if ($key === null || $key === '') {
-			$key = getenv('PUSHFTP_KEY');
-		}
-
-		return ($key === false || $key === '') ? null : $key;
-	}
-
-	/**
 	 * Derives an encryption key from the user's key with Argon2id
 	 *
 	 * @param string $key

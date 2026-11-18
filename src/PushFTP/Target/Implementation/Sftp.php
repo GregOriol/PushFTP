@@ -9,6 +9,7 @@ class Sftp extends \PushFTP\Target\AbstractTarget
 	protected $jump = null;
 	protected $jumpProcess = null;
 	protected $jumpAskpass = null;
+	protected $jumpPrivateKey = null;
 
 	protected function ___construct($host, $port = false)
 	{
@@ -34,6 +35,10 @@ class Sftp extends \PushFTP\Target\AbstractTarget
 
 		if ($this->jumpAskpass) {
 			unlink($this->jumpAskpass);
+		}
+
+		if ($this->jumpPrivateKey) {
+			unlink($this->jumpPrivateKey);
 		}
 	}
 
@@ -87,8 +92,12 @@ class Sftp extends \PushFTP\Target\AbstractTarget
 		if (!empty($this->jump['login'])) {
 			array_push($command, '-l', $this->jump['login']);
 		}
+		// ssh refuses a key readable by others, which a checkout usually creates (git doesn't keep permissions):
+		// tempnam() creates the copy as 0600
 		if (!empty($this->jump['privatekey'])) {
-			array_push($command, '-i', $this->jump['privatekey'], '-o', 'IdentitiesOnly=yes');
+			$this->jumpPrivateKey = tempnam(sys_get_temp_dir(), 'pushftp-key-');
+			copy($this->jump['privatekey'], $this->jumpPrivateKey);
+			array_push($command, '-i', $this->jumpPrivateKey, '-o', 'IdentitiesOnly=yes');
 		}
 		if (!empty($this->jump['known_hosts'])) {
 			array_push($command, '-o', 'UserKnownHostsFile='.$this->jump['known_hosts']);

@@ -69,8 +69,6 @@ class PushFTP
 	}
 
 	public function run() {
-		$this->parseCommandLine();
-
 		$this->parseConfigFile();
 		$this->prepareTarget();
 
@@ -95,68 +93,19 @@ class PushFTP
 	}
 
 	/**
-	 * Parsing command line
+	 * Setting options
 	 *
+	 * @param array $options path, profile, go, lenient, nfonc, cdnflushlist, key
 	 * @return void
 	 */
-	public function parseCommandLine() {
-		// Setting up command line parser
-		$parser = new \Console_CommandLine();
-		$parser->description = 'Push SCM changes to a target.';
-		$parser->version = $this->version;
-		$parser->addOption('profile', array(
-			'long_name'			=> '--profile',
-			'description'		=> "profile to use from pushftp.json file",
-			'action'			=> 'StoreString'
-		));
-		$parser->addOption('go', array(
-			'long_name'			=> '--go',
-			'description'		=> "real, otherwise dry run",
-			'action'			=> 'StoreTrue'
-		));
-		$parser->addOption('lenient', array(
-			'long_name'			=> '--lenient',
-			'description'		=> "lenient mode, doesn't stop on files already existing/deleted when adding or deleting",
-			'action'			=> 'StoreTrue'
-		));
-		$parser->addOption('nfonc', array(
-			'long_name'			=> '--nfonc',
-			'description'		=> "no failure on no changes : exits with OK status if no changes found (useful with scripting or CI)",
-			'action'			=> 'StoreTrue'
-		));
-		$parser->addOption('cdnflushlist', array(
-			'long_name'			=> '--cdnflushlist',
-			'description'		=> "make CDN flush list",
-			'action'			=> 'StoreTrue'
-		));
-		$parser->addOption('key', array(
-			'long_name'			=> '--key',
-			'description'		=> "key to decrypt encrypted passwords, prompted if no value given, defaults to PUSHFTP_KEY environment variable",
-			'action'			=> 'Password'
-		));
-		$parser->addArgument('path', array(
-			'multiple'		=> false,
-			'description'	=> "local path where pushftp.json is located, or pushftp.json path"
-		));
-
-		// Parsing command line
-		try {
-			$cli = $parser->parse();
-			// print_r($cli->options);
-			// print_r($cli->args);
-		} catch (\Exception $exc) {
-			$parser->displayError($exc->getMessage());
-			throw new \Exception("Error parsing command line", 1, $exc);
-		}
-
-		// Saving values
-		$this->path = $cli->args['path'];
-		$this->profileName = $cli->options['profile'];
-		$this->go = $cli->options['go'];
-		$this->lenient = $cli->options['lenient'];
-		$this->nfonc = $cli->options['nfonc'];
-		$this->cdnflushlist = $cli->options['cdnflushlist'];
-		$this->key = \PushFTP\Crypt::getKey($cli->options['key']);
+	public function setOptions($options) {
+		$this->path = $options['path'];
+		$this->profileName = $options['profile'];
+		$this->go = $options['go'];
+		$this->lenient = $options['lenient'];
+		$this->nfonc = $options['nfonc'];
+		$this->cdnflushlist = $options['cdnflushlist'];
+		$this->key = $options['key'];
 
 		// Performing some checks
 		if ($this->profileName === NULL) {
@@ -270,9 +219,18 @@ class PushFTP
 
 			if (!empty($jump['privatekey'])) {
 				$jump['privatekey'] = $this->lpath.'/'.$jump['privatekey'];
+				if (!is_readable($jump['privatekey'])) {
+					$this->e('Jump private key not found: '.$jump['privatekey']);
+					throw new \Exception('', 1);
+				}
 			}
+			// ssh would silently take a missing file as empty, and only report an unknown host key
 			if (!empty($jump['known_hosts'])) {
 				$jump['known_hosts'] = $this->lpath.'/'.$jump['known_hosts'];
+				if (!is_readable($jump['known_hosts'])) {
+					$this->e('Jump known_hosts not found: '.$jump['known_hosts']);
+					throw new \Exception('', 1);
+				}
 			}
 			if (!empty($jump['password']) && $this->key !== null) {
 				$jump['password'] = $this->_decryptPassword($jump['password']);
