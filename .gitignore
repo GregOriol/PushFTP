@@ -11,3 +11,5 @@ vendor/*
 # Git
 !.gitkeep
 .git
+
+tmp
