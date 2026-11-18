@@ -4,7 +4,6 @@
  * This script will check for SCM changes and update a target
  * 
  * Based on :
- *  - Net_FTP : http://pear.php.net/manual/en/package.networking.net-ftp.php
  *  - Console_CommandLine : http://pear.php.net/manual/en/package.console.console-commandline.php
  *  - phpseclib : http://phpseclib.sourceforge.net
  */

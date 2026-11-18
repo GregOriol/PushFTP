@@ -323,11 +323,6 @@ class PushFTP
 			$this->e('Could not login on target with '.$this->profile['target']['login'].':'.$this->profile['target']['password']);
 			throw new \Exception('', 1);
 		}
-
-		if (!empty($this->profile['target']['mode']) && $this->profile['target']['mode'] == 'passive') {
-			$this->e('Setting passive mode');
-			$this->target->setPassive();
-		}
 	}
 
 	/**

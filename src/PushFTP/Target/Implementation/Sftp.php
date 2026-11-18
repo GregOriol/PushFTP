@@ -132,11 +132,6 @@ class Sftp extends \PushFTP\Target\AbstractTarget
 		return ($response === false);
 	}
 
-	protected function _setPassive()
-	{
-		return null;
-	}
-
 	protected function _get($remote_path, $local_path)
 	{
 		return $this->handle->get($remote_path, $local_path);

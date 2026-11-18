@@ -10,8 +10,6 @@ interface TargetInterface
 
 	public function isError($response);
 
-	public function setPassive();
-
 	public function get($remote_path, $local_path);
 	public function put($local_path, $remote_path, $overwrite);
 

@@ -1,6 +1,6 @@
 # PushFTP
 
-A PHP script to handle pushing files to an FTP/SFTP from an SVN/Git repository.
+A PHP script to handle pushing files to an SFTP server from an SVN/Git repository.
 
 Its main feature is to update a server according to the changes made on the related SCM repository. The script will check the SCM differences since last push and upload the new or changed files to the server.
 

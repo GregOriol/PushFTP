@@ -41,13 +41,6 @@ abstract class AbstractTarget implements TargetInterface
 	abstract protected function _isError($result);
 
 
-	public function setPassive()
-	{
-		return $this->_setPassive();
-	}
-	abstract protected function _setPassive();
-
-
 	public function get($remote_path, $local_path)
 	{
 		return $this->_get($remote_path, $local_path);
