@@ -2,6 +2,7 @@
     "name": "gregoriol/pushftp",
     "require": {
         "php": "~8.4",
+        "ext-sodium": "*",
 
         "phpseclib/phpseclib": "3.*"
     },

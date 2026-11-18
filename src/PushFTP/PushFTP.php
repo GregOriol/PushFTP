@@ -131,8 +131,8 @@ class PushFTP
 		));
 		$parser->addOption('key', array(
 			'long_name'			=> '--key',
-			'description'		=> "key to decrypt AES encrypted passwords",
-			'action'			=> 'StoreString'
+			'description'		=> "key to decrypt encrypted passwords, prompted if no value given, defaults to PUSHFTP_KEY environment variable",
+			'action'			=> 'Password'
 		));
 		$parser->addArgument('path', array(
 			'multiple'		=> false,
@@ -156,7 +156,7 @@ class PushFTP
 		$this->lenient = $cli->options['lenient'];
 		$this->nfonc = $cli->options['nfonc'];
 		$this->cdnflushlist = $cli->options['cdnflushlist'];
-		$this->key = $cli->options['key'];
+		$this->key = \PushFTP\Crypt::getKey($cli->options['key']);
 
 		// Performing some checks
 		if ($this->profileName === NULL) {
@@ -175,7 +175,7 @@ class PushFTP
 		if ($this->key === NULL) {
 			$this->e('No key set, will try to read plaintext passwords');
 		} else {
-			$this->e('Key set, will try to read AES encrypted passwords');
+			$this->e('Key set, will try to read encrypted passwords');
 		}
 	}
 
@@ -958,38 +958,16 @@ class PushFTP
 	}
 
 	/**
-	 * Decrypts password using the AES algorithm
+	 * Decrypts password
 	 *
 	 * @return string
 	 **/
 	protected function _decryptPassword($encryptedPassword) {
-		$encrypter = new \phpseclib3\Crypt\AES('cbc');
-		$encrypter->setKey($this->_padKey($this->key));
-		$encrypter->setIV(str_repeat("\0", 16));
-
-		$password = $encrypter->decrypt(base64_decode($encryptedPassword));
-
-		return $password;
-	}
-
-	/**
-	 * Pads or truncates a key to a valid AES key length (16, 24, or 32 bytes)
-	 *
-	 * phpseclib 2.x did this automatically, phpseclib 3.x requires exact key lengths.
-	 *
-	 * @param string $key
-	 * @return string
-	 */
-	protected function _padKey($key) {
-		$len = strlen($key);
-		if ($len <= 16) {
-			return str_pad($key, 16, "\0");
-		} elseif ($len <= 24) {
-			return str_pad($key, 24, "\0");
-		} elseif ($len <= 32) {
-			return str_pad($key, 32, "\0");
-		} else {
-			return substr($key, 0, 32);
+		try {
+			return \PushFTP\Crypt::decrypt($encryptedPassword, $this->key);
+		} catch (\Exception $e) {
+			$this->e('Could not decrypt password: '.$e->getMessage());
+			throw new \Exception('', 1);
 		}
 	}
 

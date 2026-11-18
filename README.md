@@ -33,9 +33,13 @@ ssh-keyscan -p 22 bastion.example.com > bastion.known_hosts
 
 ## Tools
 ### Encrypt password
-A helper tool is provided to encrypt passwords
+A helper tool is provided to encrypt passwords (Argon2id + XSalsa20-Poly1305, requires the PHP sodium extension)
 
 	php encryptPassword.php --help
+
+The key is given with `--key=...`, or prompted with `--key` alone as last argument, or read from the `PUSHFTP_KEY` environment variable. The same applies to pushftp to decrypt the passwords.
+
+Passwords encrypted with versions before 0.9 (AES) must be encrypted again.
 
 ## Generating a private/public key
 
@@ -46,5 +50,5 @@ Type a password
 
 Encrypt the password
 ```
-php encryptPassword.php --password='' --key=''
+php encryptPassword.php --password --key
 ```

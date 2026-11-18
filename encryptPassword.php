@@ -35,8 +35,8 @@ $parser->addOption('password', array(
 ));
 $parser->addOption('key', array(
 	'long_name'			=> '--key',
-	'description'		=> "the key to use",
-	'action'			=> 'StoreString'
+	'description'		=> "the key to use, prompted if no value given, defaults to PUSHFTP_KEY environment variable",
+	'action'			=> 'Password'
 ));
 
 // Parsing command line
@@ -50,30 +50,13 @@ try {
 }
 
 // Performing some checks
-if ($cli->options['password'] === NULL || empty($cli->options['password']) ||
-    $cli->options['key'] === NULL || empty($cli->options['key'])) {
+$pass = $cli->options['password'];
+$key = \PushFTP\Crypt::getKey($cli->options['key']);
+if ($pass === NULL || $pass === '' || $key === NULL) {
 	echo 'Missing arguments'."\n";
 	exit(1);
 }
 
-$pass = $cli->options['password'];
-$key = $cli->options['key'];
-
 echo "\n";
 
-$len = strlen($key);
-if ($len <= 16) {
-	$key = str_pad($key, 16, "\0");
-} elseif ($len <= 24) {
-	$key = str_pad($key, 24, "\0");
-} elseif ($len <= 32) {
-	$key = str_pad($key, 32, "\0");
-} else {
-	$key = substr($key, 0, 32);
-}
-
-$encrypter = new \phpseclib3\Crypt\AES('cbc');
-$encrypter->setKey($key);
-$encrypter->setIV(str_repeat("\0", 16));
-$pass_encrypt = $encrypter->encrypt($pass);
-echo base64_encode($pass_encrypt)."\n";
+echo \PushFTP\Crypt::encrypt($pass, $key)."\n";
