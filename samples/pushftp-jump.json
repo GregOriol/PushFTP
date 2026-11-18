@@ -1,0 +1,23 @@
+{
+	"profiles": {
+		"sampleprofile": {
+			"target": {
+				"type": "sftp",
+				"host": "10.0.0.5",
+				"port": 22,
+				"login": "test",
+				"rsakey": "private.key",
+				"password": "test",
+				"path": ".",
+				"jump": {
+					"host": "bastion.example.com",
+					"port": 22,
+					"login": "test",
+					"rsakey": "private.key",
+					"password": "test",
+					"known_hosts": "bastion.known_hosts"
+				}
+			}
+		}
+	}
+}

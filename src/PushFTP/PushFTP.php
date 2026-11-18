@@ -255,7 +255,33 @@ class PushFTP
 			$this->e($e->getMessage());
 			throw new \Exception('', 1);
 		}
-		
+
+		if (!empty($this->profile['target']['jump'])) {
+			$jump = $this->profile['target']['jump'];
+
+			if ($this->profile['target']['type'] != 'sftp') {
+				$this->e('A jump host can only be used with an sftp target');
+				throw new \Exception('', 1);
+			}
+			if (empty($jump['host'])) {
+				$this->e('No host defined for the jump');
+				throw new \Exception('', 1);
+			}
+
+			if (!empty($jump['rsakey'])) {
+				$jump['rsakey'] = $this->lpath.'/'.$jump['rsakey'];
+			}
+			if (!empty($jump['known_hosts'])) {
+				$jump['known_hosts'] = $this->lpath.'/'.$jump['known_hosts'];
+			}
+			if (!empty($jump['password']) && $this->key !== null) {
+				$jump['password'] = $this->_decryptPassword($jump['password']);
+			}
+
+			$this->e('Using jump host '.(!empty($jump['login']) ? $jump['login'].'@' : '').$jump['host'].(!empty($jump['port']) ? ':'.$jump['port'] : ''));
+			$this->target->setJump($jump);
+		}
+
 		$this->e('Connecting to target '.$this->profile['target']['type'].' '.$this->profile['target']['host'].':'.$this->profile['target']['port']);
 		try {
 			$r = $this->target->connect();
