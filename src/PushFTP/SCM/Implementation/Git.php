@@ -57,12 +57,27 @@ class Git extends \PushFTP\SCM\AbstractSCM
 		$rev = substr($rev, strpos($rev, '@')+1);
 		$newrev = substr($newrev, strpos($newrev, '@')+1);
 
-		exec('cd '.escapeshellarg($this->root_path).' && git -c core.quotePath=false diff-tree --name-status -r --relative '.escapeshellarg($rev).'..'.escapeshellarg($newrev), $output, $return_var);
-		if ($return_var != 0) {
+		// -z: paths are not quoted and may contain any character, exec() can't be used as it splits lines and trims them
+		$process = proc_open(['git', 'diff-tree', '-z', '--name-status', '-r', '--relative', $rev.'..'.$newrev], [1 => ['pipe', 'w']], $pipes, $this->root_path);
+		if ($process === false) {
 			return false;
 		}
 
-		return $output;
+		$output = stream_get_contents($pipes[1]);
+		fclose($pipes[1]);
+		$return_var = proc_close($process);
+		if ($return_var != 0 || $output === false) {
+			return false;
+		}
+
+		// Output is status\0path\0status\0path\0..., changes are returned as status\tpath
+		$fields = explode("\0", rtrim($output, "\0"));
+		$changes = [];
+		for ($i = 0; $i + 1 < count($fields); $i += 2) {
+			$changes[] = $fields[$i]."\t".$fields[$i + 1];
+		}
+
+		return $changes;
 	}
 
 	/**

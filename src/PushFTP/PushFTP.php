@@ -47,6 +47,15 @@ class PushFTP
 	protected array $scm_changes = [];
 
 	protected string $tmpDir = '_tmp';
+	protected string $backupDir = 'backup';
+
+	/**
+	 * Operations done on the target, undone in reverse order on failure
+	 * restore: moves the backup "from" back to "to", remove: deletes "to"
+	 *
+	 * @var list<array{action: string, from: string, to: string}>
+	 */
+	protected array $rollbackSteps = [];
 
 	protected string $logfile 			= 'pushftp.log';
 	protected string $scmchangesfile 	= 'pushftp.scm_changes.txt';
@@ -90,18 +99,23 @@ class PushFTP
 		$this->parseChanges();
 		try {
 			$this->pushChanges();
+			$this->checkPermissions();
+
+			if ($this->cdnflushlist) {
+				$this->makeCdnFlushList();
+			}
+
+			$this->updateRemoteRevision();
 		} catch (\Exception $e) {
+			if ($e->getMessage() !== '') {
+				$this->e($e->getMessage());
+			}
 			$this->rollbackChanges();
 			throw new \Exception('', 1);
 		}
 
-		$this->checkPermissions();
-
-		if ($this->cdnflushlist) {
-			$this->makeCdnFlushList();
-		}
-
-		$this->updateRemoteRevision();
+		// Backups of replaced and deleted files are kept until everything succeeded
+		$this->_cleanupTmpDir($this->_getTmpDirName($this->profile['target']['path']));
 	}
 
 	/**
@@ -591,13 +605,92 @@ class PushFTP
 	 */
 	public function rollbackChanges(): void {
 		$this->e('Rolling back changes');
-		
-		// TODO: implement rollback
-		$this->e('Rollback not implemented');
-		
+
 		$rpath = $this->profile['target']['path'];
 		$rtmppath = $this->_getTmpDirName($rpath);
+
+		$failed = false;
+		foreach (array_reverse($this->rollbackSteps) as $step) {
+			if ($step['action'] == 'restore') {
+				$this->e('Restoring '.$step['to']);
+				$r = $this->target->rename($step['from'], $step['to']);
+			} else {
+				$this->e('Removing '.$step['to']);
+				$r = $this->target->rm($step['to'], true);
+			}
+
+			// Continuing, to restore as much as possible
+			if ($this->target->isError($r)) {
+				$this->e('Could not perform operation (!)');
+				$failed = true;
+			}
+		}
+		$this->rollbackSteps = [];
+
+		if ($failed) {
+			$this->e('Rollback incomplete: the target is partially updated and its rev is still '.$this->rev.', run the push again with --lenient to complete it');
+		}
+
 		$this->_cleanupTmpDir($rtmppath);
+	}
+
+	/**
+	 * Moving an existing target file to the backup directory, so it can be restored on rollback
+	 * note: must be public because it is used through $self
+	 *
+	 * @param string $rtmppath
+	 * @param string $file
+	 * @param string $rfile
+	 * @return bool false if the file could not be moved, most likely because it doesn't exist
+	 */
+	public function _backupFile(string $rtmppath, string $file, string $rfile): bool {
+		$rbackupfile = $rtmppath.'/'.$this->backupDir.'/'.hash('sha256', $file);
+
+		$r = $this->target->rename($rfile, $rbackupfile);
+		if ($this->target->isError($r)) {
+			return false;
+		}
+
+		$this->e('Backed up '.$rfile.' to '.$rbackupfile);
+		$this->_addRollbackStep('restore', $rbackupfile, $rfile);
+
+		return true;
+	}
+
+	/**
+	 * Highest missing directory of a directory about to be created recursively, so that rollback removes all created levels
+	 * note: must be public because it is used through $self
+	 *
+	 * @param string $rpath target root, never returned
+	 * @param string $rdir missing directory
+	 * @return string
+	 */
+	public function _getTopMissingDirectory(string $rpath, string $rdir): string {
+		$rtopdir = $rdir;
+		$rparent = dirname($rtopdir);
+		while (strlen($rparent) > strlen($rpath) && !$this->_directoryExists($rparent)) {
+			$rtopdir = $rparent;
+			$rparent = dirname($rtopdir);
+		}
+
+		return $rtopdir;
+	}
+
+	/**
+	 * Adding a step to undo on rollback
+	 * note: must be public because it is used through $self
+	 *
+	 * @param string $action restore or remove
+	 * @param string $from
+	 * @param string $to
+	 * @return void
+	 */
+	public function _addRollbackStep(string $action, string $from, string $to): void {
+		$this->rollbackSteps[] = [
+			'action' => $action,
+			'from' => $from,
+			'to' => $to,
+		];
 	}
 	
 	/**
@@ -624,8 +717,6 @@ class PushFTP
 						throw new \Exception('', 1);
 					}
 				}
-				
-				// TODO: copy file that will be replace to a tmp dir in case of rollback
 			},
 			'A' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use ($self): void {
 				// Directories are created when applying changes
@@ -642,9 +733,7 @@ class PushFTP
 				}
 			},
 			'D' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile): void {
-				// Nothing to do
-				
-				// TODO: copy file that will be deleted to a tmp dir in case of rollback
+				// Nothing to do, deleted files are backed up when applying changes
 			}
 		]);
 	}
@@ -667,11 +756,14 @@ class PushFTP
 				
 				$self->e('Commiting '.$lfileh.' to '.$rfile);
 				if ($self->go === true) {
+					$backedUp = $self->_backupFile($rtmppath, $file, $rfile);
 					$r = $self->target->rename($self->_getTmpFileName($rtmppath, $file), $rfile);
 					if ($self->target->isError($r)) {
 						$self->e('Could not perform operation, stopping.');
-						// TODO: rollback ?
 						throw new \Exception('', 1);
+					}
+					if (!$backedUp) {
+						$self->_addRollbackStep('remove', '', $rfile);
 					}
 				}
 			},
@@ -681,11 +773,13 @@ class PushFTP
 					if (!$r) {
 						$self->e('Creating real directory '.$rfile);
 						if ($self->go === true) {
+							$rtopdir = $self->_getTopMissingDirectory($rpath, $rfile);
 							$r = $self->target->mkdir($rfile, true);
 							if ($self->target->isError($r)) {
 								$self->e('Could not perform operation, stopping.');
 								throw new \Exception('', 1);
 							}
+							$self->_addRollbackStep('remove', '', $rtopdir);
 						}
 					}
 				}
@@ -695,29 +789,37 @@ class PushFTP
 					if (!$r) {
 						$self->e('Creating real directory '.$dir.' for new file');
 						if ($self->go === true) {
+							$rtopdir = $self->_getTopMissingDirectory($rpath, $rpath.'/'.$dir);
 							$r = $self->target->mkdir($rpath.'/'.$dir, true);
 							if ($self->target->isError($r)) {
 								$self->e('Could not perform operation, stopping.');
 								throw new \Exception('', 1);
 							}
+							$self->_addRollbackStep('remove', '', $rtopdir);
 						}
 					}
 			
 					$self->e('Commiting '.$lfileh.' to '.$rfile);
 					if ($self->go === true) {
+						// Only backed up if the file already exists on the target
+						$backedUp = $self->_backupFile($rtmppath, $file, $rfile);
 						$r = $self->target->rename($self->_getTmpFileName($rtmppath, $file), $rfile);
 						if ($self->target->isError($r)) {
 							$self->e('Could not perform operation, stopping.');
 							throw new \Exception('', 1);
 						}
+						if (!$backedUp) {
+							$self->_addRollbackStep('remove', '', $rfile);
+						}
 					}
 				}
 			},
-			'D' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use ($self): void {
+			'D' => function(string $rpath, string $file, string $lfile, string $lfileh, string $rfile) use ($rtmppath, $self): void {
 				$self->e('Deleting '.$rfile);
 				if ($self->go === true) {
-					$r = $self->target->rm($rfile, true);
-					if ($self->target->isError($r)) {
+					// Moved to the backup directory instead of deleted, so it can be restored on rollback
+					$r = $self->_backupFile($rtmppath, $file, $rfile);
+					if (!$r) {
 						if ($self->lenient) {
 							$self->e('Could not perform operation, continuing (lenient mode).');
 						} else {
@@ -728,10 +830,6 @@ class PushFTP
 				}
 			}
 		]);
-		
-		//
-		
-		$this->_cleanupTmpDir($rtmppath);
 	}
 
 	/**
@@ -830,7 +928,7 @@ class PushFTP
 				}
 			}
 
-			$r = $this->target->mkdir($rtmppath, true);
+			$r = $this->target->mkdir($rtmppath.'/'.$this->backupDir, true);
 			$this->e('Creating temporary directory');
 			if ($this->target->isError($r)) {
 				$this->e('Could not perform operation, stopping.');
