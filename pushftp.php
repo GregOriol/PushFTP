@@ -14,21 +14,11 @@
 define('PUSHFTP_VERSION', '0.9.0a');
 
 ini_set('memory_limit', '512M');
-set_time_limit(30*60*60); // 30 min
-define('BASE_PATH', __DIR__);
-
-error_reporting(E_ALL ^ E_DEPRECATED);
-
-/**
- * Base
- */
-ini_set('include_path', ini_get('include_path') . PATH_SEPARATOR . BASE_PATH);
-set_include_path(get_include_path() . PATH_SEPARATOR . BASE_PATH);
 
 /**
  * Loading
  */
-require_once('vendor/autoload.php');
+require_once(__DIR__.'/vendor/autoload.php');
 
 /**
  * Main

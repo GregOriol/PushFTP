@@ -12,9 +12,6 @@ class Git extends \PushFTP\SCM\AbstractSCM
 
 	protected function ___construct($root_path)
 	{
-		$this->repo_root = '';
-		$this->repo_url = '';
-		$this->repo_lpath = exec('cd '.escapeshellarg($this->root_path).' && git rev-parse --abbrev-ref HEAD');
 	}
 
 	protected function _getInitialVersion()
@@ -57,7 +54,7 @@ class Git extends \PushFTP\SCM\AbstractSCM
 		$rev = substr($rev, strpos($rev, '@')+1);
 		$newrev = substr($newrev, strpos($newrev, '@')+1);
 
-		exec('cd '.escapeshellarg($this->root_path).' && git diff-tree --name-status -r --relative '.escapeshellarg($rev).'..'.escapeshellarg($newrev), $output, $return_var);
+		exec('cd '.escapeshellarg($this->root_path).' && git -c core.quotePath=false diff-tree --name-status -r --relative '.escapeshellarg($rev).'..'.escapeshellarg($newrev), $output, $return_var);
 		if ($return_var != 0) {
 			return false;
 		}
@@ -67,7 +64,7 @@ class Git extends \PushFTP\SCM\AbstractSCM
 
 	protected function _parseChanges($v)
 	{
-		$arr = explode("\t", $v);
+		$arr = explode("\t", $v, 2);
 
 		if (count($arr) != 2) {
 			$arr = array();
@@ -75,10 +72,9 @@ class Git extends \PushFTP\SCM\AbstractSCM
 			$arr[1] = '';
 		}
 
-		// TODO: check how Git handles files with spaces or special characters
 		return array(
 			'status' => $arr[0],
-			'file' => str_replace($this->repo_root.'/'.$this->repo_rpath.'/', '', $arr[1])
+			'file' => $arr[1]
 		);
 	}
 

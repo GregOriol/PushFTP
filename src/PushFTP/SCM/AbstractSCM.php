@@ -6,12 +6,6 @@ abstract class AbstractSCM implements SCMInterface
 {
 	protected $root_path;
 
-	protected $repo_root;
-	protected $repo_url;
-	protected $repo_lpath;
-
-	protected $repo_rpath;
-
 	static public function detect($root_path)
 	{
 		return static::_detect($root_path);
@@ -25,10 +19,6 @@ abstract class AbstractSCM implements SCMInterface
 		}
 
 		$this->root_path = $root_path;
-
-		$this->repo_root = '';
-		$this->repo_url = '';
-		$this->repo_lpath = '';
 
 		$this->___construct($root_path);
 	}

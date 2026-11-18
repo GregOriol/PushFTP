@@ -32,8 +32,6 @@ class PushFTP
 	
 	protected $scm_changes;
 
-	protected $repo_rpath;
-
 	protected $tmpDir = '_tmp';
 
 	protected $logfile 			= 'pushftp.log';
@@ -196,7 +194,7 @@ class PushFTP
 		}
 		
 		$this->rrevfile = $this->profile['target']['path'].'/'.'rev';
-		$this->lrevfile = '/tmp/pushftp-'.hash('sha256', $this->profileName.'-'.$this->profile['target']['host'].'-'.time()).'-rev';
+		$this->lrevfile = sys_get_temp_dir().'/pushftp-'.hash('sha256', $this->profileName.'-'.$this->profile['target']['host'].'-'.time()).'-rev';
 		
 		try {
 			$this->target = \PushFTP\Target\Factory::create($this->profile['target']['type'], $this->profile['target']['host'], $this->profile['target']['port']);
@@ -278,7 +276,7 @@ class PushFTP
 			throw new \Exception('', 1);
 		}
 		if ($this->target->isError($r)) {
-			$this->e('Could not login on target with '.$this->profile['target']['login'].':'.$this->profile['target']['password']);
+			$this->e('Could not login on target with '.$this->profile['target']['login']);
 			throw new \Exception('', 1);
 		}
 	}
@@ -297,11 +295,6 @@ class PushFTP
 		} catch (\Exception $e) {
 			$this->e($e->getMessage());
 			throw new \Exception('', 1);
-		}
-		
-		// TODO: is this really useful ?
-		if (!empty($this->scm->repo_root)) {
-			$this->e('Using SCM root '.$this->scm->repo_root.' (note: local and FTP must have been pulled from the same repository !)');
 		}
 	}
 
@@ -345,16 +338,13 @@ class PushFTP
 			unlink($this->lrevfile);
 		}
 
-		// Parsing revision and checking the value
-		$r = strpos($this->rev, '@');
+		// Checking the value
 		if (strlen($this->rev) == 0) {
 			$this->e('Target revision is empty');
 			throw new \Exception('', 1);
-		} elseif ($r === false) {
+		} elseif (strpos($this->rev, '@') === false) {
 			$this->e('Target revision "'.$this->rev.'" doesn\'t match the expected format path@rev');
 			throw new \Exception('', 1);
-		} else {
-			$this->repo_rpath = substr($this->rev, 0, $r);
 		}
 	}
 
@@ -374,7 +364,6 @@ class PushFTP
 		}
 
 		// Parsing changes
-		$this->scm->repo_rpath = $this->repo_rpath;
 		$this->scm_changes = array_map(array($this->scm, 'parseChanges'), $output);
 
 		// Dumping changes list
@@ -676,11 +665,9 @@ class PushFTP
 		if ($this->go === true) {
 			$this->e('Cleaning up temporary directory '.$rtmppath);
 			
-			if ($this->go === true) {
-				$r = $this->target->rm($rtmppath.'/', true);
-				if ($this->target->isError($r)) {
-					$this->e('Could not perform operation (!)');
-				}
+			$r = $this->target->rm($rtmppath.'/', true);
+			if ($this->target->isError($r)) {
+				$this->e('Could not perform operation (!)');
 			}
 		}
 	}

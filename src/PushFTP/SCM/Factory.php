@@ -8,9 +8,6 @@ class Factory
 	{
 		$type = Factory::detectSCMType($root_path);
 		switch($type) {
-			case 'svn':
-				$scm = new Implementation\SVN($root_path);
-				break;
 			case 'git':
 				$scm = new Implementation\Git($root_path);
 				break;
@@ -23,10 +20,7 @@ class Factory
 
 	protected static function detectSCMType($root_path)
 	{
-		if (Implementation\SVN::detect($root_path)) {
-			return 'svn';
-		}
-		else if (Implementation\Git::detect($root_path)) {
+		if (Implementation\Git::detect($root_path)) {
 			return 'git';
 		}
 		
