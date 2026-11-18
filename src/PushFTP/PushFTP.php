@@ -247,7 +247,7 @@ class PushFTP
 		}
 		
 		$this->rrevfile = $this->profile['target']['path'].'/'.'rev';
-		$this->lrevfile = '/tmp/pushftp-'.sha1($this->profileName.'-'.$this->profile['target']['host'].'-'.time()).'-rev';
+		$this->lrevfile = '/tmp/pushftp-'.hash('sha256', $this->profileName.'-'.$this->profile['target']['host'].'-'.time()).'-rev';
 		
 		try {
 			$this->target = \PushFTP\Target\Factory::create($this->profile['target']['type'], $this->profile['target']['host'], $this->profile['target']['port']);
@@ -491,22 +491,10 @@ class PushFTP
 		$self = $this;
 		$this->_processChanges($rpath, array(
 			'M' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($self) {
-				$dir = dirname($file);
-				$r = $self->_directoryExists($rpath.'/'.$dir);
-				if (!$r) {
-					$self->e('Creating tmp directory '.$dir.' for file');
-					if ($self->go === true) {
-						$r = $self->target->mkdir($rpath.'/'.$dir, true);
-						if ($self->target->isError($r)) {
-							$self->e('Could not perform operation, stopping.');
-							throw new \Exception('', 1);
-						}
-					}
-				}
-				
-				$self->e('Preparing '.$lfileh.' at '.$rfile);
+				$rtmpfile = $self->_getTmpFileName($rpath, $file);
+				$self->e('Preparing '.$lfileh.' at '.$rtmpfile);
 				if ($self->go === true) {
-					$r = $self->target->put($lfile, $rfile, true);
+					$r = $self->target->put($lfile, $rtmpfile, true);
 					if ($self->target->isError($r)) {
 						$self->e('Could not perform operation, stopping.');
 						throw new \Exception('', 1);
@@ -516,36 +504,12 @@ class PushFTP
 				// TODO: copy file that will be replace to a tmp dir in case of rollback
 			},
 			'A' => function($rpath, $file, $lfile, $lfileh, $rfile) use ($self) {
-				if (is_dir($lfile)) {
-					$r = $self->_directoryExists($rfile);
-					if (!$r) {
-						$self->e('Creating tmp directory '.$rfile);
-						if ($self->go === true) {
-							$r = $self->target->mkdir($rfile, true);
-							if ($self->target->isError($r)) {
-								$self->e('Could not perform operation, stopping.');
-								throw new \Exception('', 1);
-							}
-						}
-					}
-				}
-				else {
-					$dir = dirname($file);
-					$r = $self->_directoryExists($rpath.'/'.$dir);
-					if (!$r) {
-						$self->e('Creating tmp directory '.$dir.' for new file');
-						if ($self->go === true) {
-							$r = $self->target->mkdir($rpath.'/'.$dir, true);
-							if ($self->target->isError($r)) {
-								$self->e('Could not perform operation, stopping.');
-								throw new \Exception('', 1);
-							}
-						}
-					}
-			
-					$self->e('Preparing '.$lfileh.' at '.$rfile);
+				// Directories are created when applying changes
+				if (!is_dir($lfile)) {
+					$rtmpfile = $self->_getTmpFileName($rpath, $file);
+					$self->e('Preparing '.$lfileh.' at '.$rtmpfile);
 					if ($self->go === true) {
-						$r = $self->target->put($lfile, $rfile, ($self->lenient) ? true : false);
+						$r = $self->target->put($lfile, $rtmpfile, ($self->lenient) ? true : false);
 						if ($self->target->isError($r)) {
 							$self->e('Could not perform operation, stopping.');
 							throw new \Exception('', 1);
@@ -579,7 +543,7 @@ class PushFTP
 				
 				$self->e('Commiting '.$lfileh.' to '.$rfile);
 				if ($self->go === true) {
-					$r = $self->target->rename($rtmppath.'/'.$file, $rfile);
+					$r = $self->target->rename($self->_getTmpFileName($rtmppath, $file), $rfile);
 					if ($self->target->isError($r)) {
 						$self->e('Could not perform operation, stopping.');
 						// TODO: rollback ?
@@ -617,7 +581,7 @@ class PushFTP
 			
 					$self->e('Commiting '.$lfileh.' to '.$rfile);
 					if ($self->go === true) {
-						$r = $self->target->rename($rtmppath.'/'.$file, $rfile);
+						$r = $self->target->rename($self->_getTmpFileName($rtmppath, $file), $rfile);
 						if ($self->target->isError($r)) {
 							$self->e('Could not perform operation, stopping.');
 							throw new \Exception('', 1);
@@ -701,6 +665,18 @@ class PushFTP
 		$rpath .= '/'.$this->tmpDir;
 
 		return $rpath;
+	}
+
+	/**
+	 * Remote temporary file name, flat in the temporary directory
+	 * note: must be public because it is used through $self
+	 *
+	 * @param string $rtmppath
+	 * @param string $file
+	 * @return string
+	 */
+	public function _getTmpFileName($rtmppath, $file) {
+		return $rtmppath.'/'.hash('sha256', $file);
 	}
 
 	/**
