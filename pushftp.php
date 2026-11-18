@@ -30,7 +30,6 @@ set_include_path(get_include_path() . PATH_SEPARATOR . BASE_PATH);
  * Loading
  */
 require_once('vendor/autoload.php');
-require_once('vendor/load.php');
 
 /**
  * Main

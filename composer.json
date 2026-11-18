@@ -4,7 +4,8 @@
         "php": "~8.4",
         "ext-sodium": "*",
 
-        "phpseclib/phpseclib": "3.*"
+        "phpseclib/phpseclib": "3.*",
+        "pear/console_commandline": "~1.0"
     },
     "autoload": {
         "psr-4": {
