@@ -11,7 +11,7 @@
 /**
  * Configuration
  */
-define('PUSHFTP_VERSION', '0.9.0');
+define('PUSHFTP_VERSION', '0.9.1');
 
 ini_set('memory_limit', '512M');
 
