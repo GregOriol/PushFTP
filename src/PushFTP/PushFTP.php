@@ -677,6 +677,35 @@ class PushFTP
 	}
 
 	/**
+	 * Applying the permission rules to the directories just created, from $rdir up to $rtopdir
+	 * Git only lists files as changes, so directory rules can only be applied when creating directories
+	 * note: must be public because it is used through $self
+	 *
+	 * @param string $rpath target root
+	 * @param string $rtopdir highest directory created
+	 * @param string $rdir deepest directory created
+	 * @return void
+	 */
+	public function _updateCreatedDirectoriesPermissions(string $rpath, string $rtopdir, string $rdir): void {
+		if (empty($this->profile['permissions'])) {
+			return;
+		}
+
+		while (strlen($rdir) >= strlen($rtopdir)) {
+			$dir = substr($rdir, strlen($rpath) + 1);
+			$ldir = $this->lpath.'/'.$dir;
+			$ldirh = $this->lpathh.'/'.$dir;
+
+			$permissions = $this->_checkPermissions($dir, $ldir, $ldirh);
+			if ($permissions !== false) {
+				$this->_updatePermissions($this, $rpath, $dir, $ldir, $ldirh, $rdir, $permissions);
+			}
+
+			$rdir = dirname($rdir);
+		}
+	}
+
+	/**
 	 * Adding a step to undo on rollback
 	 * note: must be public because it is used through $self
 	 *
@@ -780,6 +809,7 @@ class PushFTP
 								throw new \Exception('', 1);
 							}
 							$self->_addRollbackStep('remove', '', $rtopdir);
+							$self->_updateCreatedDirectoriesPermissions($rpath, $rtopdir, $rfile);
 						}
 					}
 				}
@@ -796,6 +826,7 @@ class PushFTP
 								throw new \Exception('', 1);
 							}
 							$self->_addRollbackStep('remove', '', $rtopdir);
+							$self->_updateCreatedDirectoriesPermissions($rpath, $rtopdir, $rpath.'/'.$dir);
 						}
 					}
 			
